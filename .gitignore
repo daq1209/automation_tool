@@ -1,2 +1,13 @@
 venv/
+# Bỏ qua file key của Google
+service_account.json
+
+# Bỏ qua các file môi trường ảo và cache
+venv/
+__pycache__/
+*.pyc
+
+# Bỏ qua các file chứa biến môi trường (nếu dùng)
+.env
+.streamlit/secrets.toml
 
