@@ -1,0 +1,12 @@
+tasks
+-chỉnh lại sync hình ảnh trực tiếp từ file sheet(done)
+-chỉnh lại xóa media theo ngày(done)
+-chỉnh lại giao diện cho admin rõ ràng với các mục cho products, media (done)
+-chỉnh lại các key ra chỗ lưu riêng tránh bắt user nhập tay mỗi lần sử dung(done)
+-tối ưu hóa code ra cấu trúc phân tầng(done)
+-viết hàm cập nhật các log và track theo data đã tải dùng 2 way sync
+-chỉnh sửa hàm import để tải ảnh đúng theo mảng URL
+-thêm xác thực hai lớp cho các chức năng delete    
+-chuyển đổi toàn bộ hardcode key thành các key động để tối ưu tính bảo mật
+-tối ưu hóa tốc độ tải dữ lieu     
+-port app lên môi trường của google collab
