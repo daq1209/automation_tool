@@ -60,3 +60,20 @@ def update_row_status(sheet_id, tab_name, row_index, status_message):
         ws.update_cell(row_index, 1, str(status_message))
     except Exception as e:
         print(f"Lỗi ghi Sheet dòng {row_index}: {e}")
+def update_sheet_batch(sheet_id, tab_name, updates):
+    """
+    Cập nhật hàng loạt ô cùng lúc để tránh lỗi 429 Quota Exceeded.
+    updates: Danh sách các dict [{'range': 'A2', 'values': [['Done']]}, ...]
+    """
+    gc = init_google_sheets()
+    if not gc or not updates: return
+
+    try:
+        sh = gc.open_by_key(sheet_id)
+        ws = sh.worksheet(tab_name)
+        
+        # Hàm này gói tất cả thay đổi vào 1 request duy nhất gửi lên Google
+        ws.batch_update(updates)
+        print(f"Đã batch update thành công {len(updates)} dòng.")
+    except Exception as e:
+        st.error(f"Lỗi ghi Batch Sheet: {e}")
