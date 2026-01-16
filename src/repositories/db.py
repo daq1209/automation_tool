@@ -3,7 +3,7 @@ import gspread
 from supabase import create_client
 from google.oauth2 import service_account
 
-# Cấu hình Supabase
+# --- SUPABASE CONFIGURATION ---
 try:
     SUPA_URL = "https://ulmtzfgxjidsopxtapwf.supabase.co"
     SUPA_KEY = "sb_publishable_8_xCv3TMJiyHtM_Ug_gAgQ_IrBf5Vdq"
@@ -20,6 +20,7 @@ def init_supabase():
 @st.cache_resource
 def init_google_sheets():
     try:
+        # Ensure 'service_account.json' is in the root directory
         scopes = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
         creds = service_account.Credentials.from_service_account_file('service_account.json', scopes=scopes)
         return gspread.authorize(creds)
@@ -27,16 +28,21 @@ def init_google_sheets():
         st.error(f"Google Sheets connection error: {e}")
         return None
 
+# --- DATA ACCESS FUNCTIONS ---
+
 def get_all_sites():
-    """Lấy danh sách site từ Supabase"""
+    """Fetch sites from Supabase"""
     supabase = init_supabase()
     if not supabase: return []
     try:
-        return supabase.table('woo_sites').select("*").order('id').execute().data
-    except: return []
+        res = supabase.table('woo_sites').select("*").order('id').execute()
+        return res.data if res.data else []
+    except Exception as e: 
+        print(f"DB Error: {e}")
+        return []
 
 def check_admin_login(username, password):
-    """Kiểm tra đăng nhập"""
+    """Check admin credentials"""
     supabase = init_supabase()
     if not supabase: return False
     try:
@@ -44,26 +50,12 @@ def check_admin_login(username, password):
         return len(res.data) > 0
     except: return False
 
-# --- HÀM MỚI THÊM CHO GIAI ĐOẠN 1 ---
-def update_row_status(sheet_id, tab_name, row_index, status_message):
-    """
-    Ghi trạng thái vào Cột 1 (Cột A) của dòng tương ứng.
-    row_index: Số thứ tự dòng (Header là 1, Dữ liệu bắt đầu từ 2).
-    """
-    gc = init_google_sheets()
-    if not gc: return
+# --- SHEET UPDATE FUNCTIONS ---
 
-    try:
-        sh = gc.open_by_key(sheet_id)
-        ws = sh.worksheet(tab_name)
-        # update_cell(row, col, value)
-        ws.update_cell(row_index, 1, str(status_message))
-    except Exception as e:
-        print(f"Lỗi ghi Sheet dòng {row_index}: {e}")
 def update_sheet_batch(sheet_id, tab_name, updates):
     """
-    Cập nhật hàng loạt ô cùng lúc để tránh lỗi 429 Quota Exceeded.
-    updates: Danh sách các dict [{'range': 'A2', 'values': [['Done']]}, ...]
+    Batch update multiple cells at once to avoid API rate limits.
+    updates: List of [{'range': 'A2', 'values': [['Done']]}, ...]
     """
     gc = init_google_sheets()
     if not gc or not updates: return
@@ -72,8 +64,19 @@ def update_sheet_batch(sheet_id, tab_name, updates):
         sh = gc.open_by_key(sheet_id)
         ws = sh.worksheet(tab_name)
         
-        # Hàm này gói tất cả thay đổi vào 1 request duy nhất gửi lên Google
+        # Single request to update all cells
         ws.batch_update(updates)
-        print(f"Đã batch update thành công {len(updates)} dòng.")
     except Exception as e:
-        st.error(f"Lỗi ghi Batch Sheet: {e}")
+        print(f"Batch Update Error: {e}")
+
+def update_row_status(sheet_id, tab_name, row_index, status_message):
+    """Legacy single row update"""
+    gc = init_google_sheets()
+    if not gc: return
+
+    try:
+        sh = gc.open_by_key(sheet_id)
+        ws = sh.worksheet(tab_name)
+        ws.update_cell(row_index, 1, str(status_message))
+    except Exception as e:
+        print(f"Row Update Error: {e}")

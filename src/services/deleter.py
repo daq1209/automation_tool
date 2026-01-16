@@ -1,47 +1,48 @@
 import concurrent.futures
 from src.repositories import woo, db
-from src.utils.common import get_val
+from src.utils.common import get_val, col_idx_to_letter
 
+# --- WORKERS ---
 def worker_delete_product(ids_chunk, domain, secret):
     success, count, deleted_skus = woo.delete_products_batch_custom(domain, secret, ids_chunk)
     return success, count, (deleted_skus if success else [])
-
-def worker_delete_media(ids_chunk, domain, secret):
-    success = woo.delete_media_batch(domain, secret, ids_chunk)
-    return success, len(ids_chunk)
 
 def worker_fetch_page(page, domain, ck, cs):
     res = woo.fetch_product_ids_page(domain, ck, cs, page, status='publish')
     return [p['id'] for p in res.json()] if res and res.status_code == 200 else []
 
-def get_products_for_ui(domain, ck, cs, limit=50, specific_ids=None):
-    raw_data = woo.fetch_products_preview(domain, ck, cs, limit, status='any', include_ids=specific_ids)
+# --- UI FETCHERS (Same as before) ---
+def get_products_for_ui(domain, secret, limit=50, search_input=None):
+    search_term = None
+    if search_input:
+        search_term = ",".join(search_input) if isinstance(search_input, list) else str(search_input).strip()
+    raw_data = woo.fetch_product_list_custom(domain, secret, limit, search_term)
     if not raw_data: return []
     clean_data = []
     for p in raw_data:
-        img_url = p['images'][0]['src'] if p.get('images') else ""
-        clean_data.append({
-            "Select": False, "ID": p['id'], "Image": img_url,
-            "Name": p['name'], "SKU": p['sku'], "Status": p['status']
-        })
+        clean_data.append({"Select": False, "ID": p['id'], "Image": p['image'], "Name": p['name'], "SKU": p['sku'], "Status": p['status']})
     return clean_data
 
-def get_media_for_ui(domain, secret, limit=50, specific_ids=None):
-    raw_data = woo.fetch_media_preview_custom(domain, secret, limit, include_ids=specific_ids)
+def get_media_for_ui(domain, secret, limit=50, search_input=None):
+    # (Same as previous versions)
+    search_term = None
+    if search_input:
+        search_term = ",".join(search_input) if isinstance(search_input, list) else str(search_input).strip()
+    raw_data = woo.fetch_media_preview_custom(domain, secret, limit, search_term)
     if not raw_data: return []
     clean_data = []
     for m in raw_data:
-        clean_data.append({
-            "Select": False, "ID": m['id'], "Thumbnail": m['url'], "Date": m['date']
-        })
+        clean_data.append({"Select": False, "ID": m['id'], "Thumbnail": m['url'], "Date": m['date']})
     return clean_data
 
+# --- DELETE LOGIC ---
 def delete_product_list(domain, secret, id_list, max_workers=5, progress_callback=None):
     if not id_list: return ["List empty"], []
     chunk_size = 50 
     chunks = [id_list[i:i + chunk_size] for i in range(0, len(id_list), chunk_size)]
     deleted_total = 0
     returned_skus = []
+    
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(worker_delete_product, chunk, domain, secret) for chunk in chunks]
         for i, future in enumerate(concurrent.futures.as_completed(futures)):
@@ -49,8 +50,10 @@ def delete_product_list(domain, secret, id_list, max_workers=5, progress_callbac
             if is_ok: 
                 deleted_total += count
                 returned_skus.extend(skus)
-            if progress_callback: progress_callback((i + 1) / len(chunks), deleted_total, len(id_list))
-    return [f"Deleted {deleted_total} items from WP."], returned_skus
+            if progress_callback: 
+                progress_callback((i + 1) / len(chunks), deleted_total, len(id_list))
+                
+    return [f"Deleted {deleted_total} items."], returned_skus
 
 def delete_all_products_scan_mode(domain, ck, cs, secret, max_workers=10, progress_callback=None):
     res1 = woo.fetch_product_ids_page(domain, ck, cs, 1, status='publish')
@@ -67,9 +70,13 @@ def delete_all_products_scan_mode(domain, ck, cs, secret, max_workers=10, progre
     return delete_product_list(domain, secret, all_ids, max_workers, progress_callback)
 
 def sync_deleted_rows(sheet_id, tab_name, deleted_skus):
+    """
+    [RULE 3] DELETE SUCCESS -> Holding | -1
+    """
     if not deleted_skus: return ["No items to sync."]
     gc = db.init_google_sheets()
     if not gc: return ["Connection Error"]
+    
     try:
         sh = gc.open_by_key(sheet_id)
         ws = sh.worksheet(tab_name)
@@ -77,26 +84,42 @@ def sync_deleted_rows(sheet_id, tab_name, deleted_skus):
         if len(vals) < 2: return ["Sheet empty"]
         header = [str(x).strip() for x in vals[0]]
         data = vals[1:]
+        
         id_col_indices = [i for i, h in enumerate(header) if h.lower() in ['sku', 'id', 'product id']]
         if not id_col_indices: return ["No ID/SKU column found"]
         id_col_idx = id_col_indices[0]
+        
+        pub_col_letter = None
+        for i, h in enumerate(header):
+            if h.lower() in ['published', 'active', 'is_published']:
+                pub_col_letter = col_idx_to_letter(i)
+                break
+
         batch_updates = []
         count = 0
         deleted_set = {str(x).strip() for x in deleted_skus}
+        
         for i, row in enumerate(data):
             if len(row) > id_col_idx:
                 current_sheet_val = str(row[id_col_idx]).strip()
-                current_status = str(row[0]).strip().lower()
-                if current_sheet_val in deleted_set and current_status == 'done':
-                    batch_updates.append({'range': f'A{i+2}','values': [['Holding']]})
+                if current_sheet_val in deleted_set:
+                    row_num = i + 2
+                    # Status -> Holding
+                    batch_updates.append({'range': f'A{row_num}','values': [['Holding']]})
+                    # Published -> -1
+                    if pub_col_letter:
+                        batch_updates.append({'range': f'{pub_col_letter}{row_num}','values': [[-1]]})
                     count += 1
-        if batch_updates:
+                    
+        if batch_updates: 
             db.update_sheet_batch(sheet_id, tab_name, batch_updates)
-            return [f"Fast Sync: Found & Updated {count} rows."]
-        return [f"Fast Sync: Deleted {len(deleted_skus)} items (No match in sheet)."]
+            return [f"Synced {count} rows to 'Holding' / '-1'."]
+        return [f"Deleted {len(deleted_skus)} items from WP (No match in sheet)."]
+        
     except Exception as e: return [f"Sync Error: {str(e)}"]
 
 def delete_all_media(domain, secret, max_workers=10, progress_callback=None):
+    # (Same as before)
     all_ids = woo.get_all_media_ids(domain, secret)
     total = len(all_ids)
     if total == 0: return True, "Empty Library"

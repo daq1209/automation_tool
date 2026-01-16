@@ -1,79 +1,84 @@
-import concurrent.futures
-import streamlit as st
 from src.repositories import woo, db
-from src.utils.common import get_val
+from src.utils.common import get_val, col_idx_to_letter
 
-def worker_check_product(row, domain, secret, index):
+def run_sync_sheet_with_website(site, tab_name, max_workers=20, progress_callback=None):
     """
-    Worker này chỉ có nhiệm vụ Kiểm tra và Trả về kết quả (KHÔNG GHI SHEET).
+    V12.3: FAST SYNC ALGORITHM
+    1. Fetch ALL SKUs from WP in 1 request.
+    2. Compare with Sheet Data in Memory.
+    3. Batch Update missing items.
     """
-    sku = get_val(row, ['SKU', 'sku', 'ID', 'id', 'Product ID'])
-    if not sku:
-        return None
-
-    # Lấy trạng thái hiện tại trên Sheet
-    # Giả sử cột đầu tiên (index 0) là cột Status/Check_update
-    current_sheet_status = str(list(row.values())[0]).strip().lower()
-
-    # Gọi API check
-    is_exist = woo.check_product_exists(domain, secret, sku)
+    gc = db.init_google_sheets()
+    if not gc: return ["Connection Error"]
     
-    if is_exist is True:
-        new_status = "Done"
-    elif is_exist is False:
-        new_status = "Holding"
-    else:
-        # Nếu lỗi kết nối thì giữ nguyên hoặc báo Error, ở đây ta tạm bỏ qua để không ghi đè bậy
-        return None
-
-    # Chỉ cập nhật nếu trạng thái thay đổi
-    if current_sheet_status != new_status.lower():
-        return {
-            'row_index': index,
-            'status': new_status,
-            'sku': sku,
-            'old_status': current_sheet_status
-        }
-    
-    return None
-
-def process_check_existence(data_rows, domain, secret, sheet_id, tab_name, max_workers=10, progress_callback=None):
-    logs = []
-    batch_data = []
-    
-    # 1. Quét dữ liệu (Đa luồng) - Bước này chạy rất nhanh
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Tạo dictionary để map future với index dòng
-        future_to_row = {
-            executor.submit(worker_check_product, row, domain, secret, i + 2): (i + 2)
-            for i, row in enumerate(data_rows)
-        }
+    try:
+        # 1. Fetch WP SKUs (Speed: ~2s for 10k items)
+        if progress_callback: progress_callback(0.1)
+        wp_sku_set = woo.get_all_skus_fast(site['domain_url'], site['secret_key'])
         
-        total_items = len(data_rows)
-        processed_count = 0
+        # 2. Fetch Sheet Data
+        sh = gc.open_by_key(site['google_sheet_id'])
+        ws = sh.worksheet(tab_name)
+        vals = ws.get_all_values()
         
-        for future in concurrent.futures.as_completed(future_to_row):
-            processed_count += 1
-            res = future.result()
-            
-            if res:
-                # Nếu có kết quả cần thay đổi, thêm vào danh sách chờ ghi
-                batch_data.append({
-                    'range': f'A{res["row_index"]}',  # Giả định cột Status là cột A
-                    'values': [[res['status']]]
-                })
-                logs.append(f"Row {res['row_index']}: {res['old_status']} -> {res['status']} ({res['sku']})")
-            
-            # Cập nhật tiến độ trên UI
-            if progress_callback:
-                progress_callback(processed_count / total_items, processed_count, total_items)
+        if len(vals) < 2: return ["Sheet is empty"]
+        
+        header = [str(x).strip() for x in vals[0]]
+        data = vals[1:]
+        
+        # Find Published Column
+        pub_col_letter = None
+        for i, h in enumerate(header):
+            if h.lower() in ['published', 'active', 'is_published']:
+                pub_col_letter = col_idx_to_letter(i)
+                break
+        
+        # Find ID/SKU Column indices
+        id_keys = ['id', 'product id']
+        sku_keys = ['sku', 'model']
+        
+        id_idx = next((i for i, h in enumerate(header) if h.lower() in id_keys), -1)
+        sku_idx = next((i for i, h in enumerate(header) if h.lower() in sku_keys), -1)
 
-    # 2. Ghi xuống Sheet (1 Lần duy nhất) - Giải quyết triệt để lỗi 429
-    if batch_data:
-        logs.append(f"--- Đang ghi {len(batch_data)} thay đổi xuống Sheet... ---")
-        db.update_sheet_batch(sheet_id, tab_name, batch_data)
-        logs.append("--- Ghi dữ liệu hoàn tất! ---")
-    else:
-        logs.append("--- Không có dữ liệu nào cần cập nhật ---")
-                
-    return logs
+        batch_updates = []
+        count_synced = 0
+        total_rows = len(data)
+        
+        # 3. Memory Comparison (Speed: ~0.1s)
+        for i, row in enumerate(data):
+            row_num = i + 2
+            
+            # Get Sheet ID/SKU
+            sheet_id = str(row[id_idx]).strip() if id_idx != -1 else ""
+            sheet_sku = str(row[sku_idx]).strip() if sku_idx != -1 else ""
+            
+            # Key logic: Check if Sheet ID OR Sheet SKU exists in WP Set
+            exists_on_wp = False
+            if sheet_id and sheet_id in wp_sku_set: exists_on_wp = True
+            elif sheet_sku and sheet_sku in wp_sku_set: exists_on_wp = True
+            
+            # Get current status in sheet (Col A)
+            current_status = str(row[0]).lower().strip()
+            
+            # If NOT on WP but Sheet says something else (or empty), force it to Holding
+            if not exists_on_wp:
+                if 'holding' not in current_status:
+                    batch_updates.append({'range': f'A{row_num}', 'values': [['Holding']]})
+                    if pub_col_letter:
+                        batch_updates.append({'range': f'{pub_col_letter}{row_num}', 'values': [[-1]]})
+                    count_synced += 1
+            
+            if progress_callback and i % 500 == 0: 
+                progress_callback(0.2 + (0.8 * (i / total_rows)))
+
+        # 4. Push Updates
+        if batch_updates:
+            db.update_sheet_batch(site['google_sheet_id'], tab_name, batch_updates)
+            if progress_callback: progress_callback(1.0)
+            return [f"Fast Sync: Found {count_synced} items missing on WP. Reset to 'Holding'."]
+        
+        if progress_callback: progress_callback(1.0)
+        return [f"Fast Sync: All {total_rows} items checked. Everything matches."]
+
+    except Exception as e:
+        return [f"Sync Error: {str(e)}"]
