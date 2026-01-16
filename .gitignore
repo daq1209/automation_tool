@@ -1,13 +1,24 @@
-venv/
-# Bỏ qua file key của Google
-service_account.json
+# --- BẢO MẬT (QUAN TRỌNG) ---
+# Bỏ qua toàn bộ thư mục chứa secrets.toml
+.streamlit/
 
-# Bỏ qua các file môi trường ảo và cache
+# Bỏ qua file service account gốc (đề phòng bạn quên xóa)
+service_account.json
+*.json
+
+# Bỏ qua các file môi trường
+.env
+
+# --- RÁC HỆ THỐNG ---
+# Bỏ qua thư mục ảo Python
 venv/
+env/
+.venv/
+
+# Bỏ qua file cache của Python (rất nhiều file rác)
 __pycache__/
 *.pyc
 
-# Bỏ qua các file chứa biến môi trường (nếu dùng)
-.env
-.streamlit/secrets.toml
-
+# Bỏ qua file hệ điều hành
+.DS_Store
+Thumbs.db
