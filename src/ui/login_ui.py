@@ -8,7 +8,7 @@ def render_login():
     with st.form("login_form"):
         username = st.text_input("Username:")
         password = st.text_input("Password:", type="password")
-        submit = st.form_submit_button("Login", type="primary")
+        submit = st.form_submit_button("Login", type="primary", use_container_width=True)
         
         if submit:
             if not username or not password:
