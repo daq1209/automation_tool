@@ -1,6 +1,8 @@
 import concurrent.futures
 from src.repositories import woo, db
 from src.utils.common import get_val, col_idx_to_letter
+from config import Config
+from src.utils.logger import logger
 
 # --- WORKERS ---
 def worker_delete_product(ids_chunk, domain, secret):

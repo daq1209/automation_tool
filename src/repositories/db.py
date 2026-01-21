@@ -2,8 +2,11 @@ import streamlit as st
 import gspread
 import base64
 import json
-from supabase import create_client
+from supabase import create_client, Client
+import pandas as pd
 from google.oauth2 import service_account
+import bcrypt
+from src.utils.logger import logger
 
 # --- 1. CONFIGURATION ---
 try:
@@ -54,32 +57,70 @@ def get_all_sites():
     try:
         res = supabase.table('woo_sites').select("*").order('id').execute()
         return res.data if res.data else []
-    except Exception as e: 
-        print(f"DB Error (get_all_sites): {e}")
+    except AttributeError as e:
+        logger.error(f"Supabase table access error in get_all_sites: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"Database error in get_all_sites: {e}", exc_info=True)
         return []
 
 def check_admin_login(username, password):
-    """Kiem tra dang nhap Admin"""
-    supabase = init_supabase()
+    """
+    Kiểm tra mật khẩu admin từ Supabase với bcrypt hashing.
     
-    # [DEBUG QUAN TRỌNG] Hiển thị lỗi lên màn hình nếu không kết nối được
-    if not supabase:
-        st.error(f"Lỗi: Không kết nối được Supabase. Kiểm tra secrets.toml. URL hiện tại: {SUPA_URL}")
+    Hỗ trợ cả password_hash (bcrypt) và password (plaintext) để migration từ từ.
+    
+    Args:
+        username: Tên đăng nhập
+        password: Mật khẩu plaintext từ form
+        
+    Returns:
+        bool: True nếu đăng nhập thành công
+    """
+    supabase = init_supabase()
+    try:
+        logger.info(f"Login attempt for user: {username}")
+        
+        # Lấy thông tin user
+        res = supabase.table('admin_users').select('username, password, password_hash').eq('username', username).execute()
+        
+        if len(res.data) == 0:
+            logger.warning(f"User not found: {username}")
+            return False
+        
+        user_data = res.data[0]
+        
+        # Ưu tiên dùng password_hash (bcrypt) nếu có
+        if user_data.get('password_hash'):
+            try:
+                is_valid = bcrypt.checkpw(
+                    password.encode('utf-8'),
+                    user_data['password_hash'].encode('utf-8')
+                )
+                if is_valid:
+                    logger.info(f"Login successful (hashed): {username}")
+                else:
+                    logger.warning(f"Login failed (invalid password): {username}")
+                return is_valid
+            except Exception as e:
+                logger.error(f"Bcrypt error for {username}: {str(e)}")
+                return False
+        
+        # Fallback: Dùng plaintext password (cho migration)
+        # DEPRECATED - Nên migrate sang password_hash
+        elif user_data.get('password'):
+            is_valid = user_data['password'] == password
+            if is_valid:
+                logger.warning(f"Login successful (plaintext - DEPRECATED): {username}")
+            else:
+                logger.warning(f"Login failed (plaintext): {username}")
+            return is_valid
+        
+        logger.error(f"No password method available for user: {username}")
         return False
         
-    try:
-        # Thử in ra username đang check
-        print(f"DEBUG: Checking user {username}...")
-        
-        res = supabase.table('admin_users').select('*').eq('username', username).eq('password', password).execute()
-        
-        # Nếu kết nối được nhưng không tìm thấy user
-        if len(res.data) == 0:
-            print("DEBUG: Kết nối OK nhưng sai Pass/User")
-            return False
-            
-        return True
     except Exception as e: 
+        logger.error(f"Database error during login: {str(e)}")
         st.error(f"Lỗi truy vấn DB: {str(e)}")
         return False
 

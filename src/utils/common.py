@@ -1,13 +1,14 @@
 import streamlit as st
+from typing import Dict, List, Any, Optional
 
-def local_css(file_name):
+def local_css(file_name: str) -> None:
     try:
         with open(file_name) as f:
             st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
     except FileNotFoundError:
         pass
 
-def get_val(row, keys_to_check):
+def get_val(row: Dict[str, Any], keys_to_check: List[str]) -> str:
     row_lower = {k.lower().strip(): v for k, v in row.items()}
     for k in keys_to_check:
         key_lower = k.lower().strip()
@@ -16,7 +17,7 @@ def get_val(row, keys_to_check):
             if val and val.lower() != 'nan' and val.lower() != 'none': return val
     return ""
 
-def col_idx_to_letter(n):
+def col_idx_to_letter(n: int) -> str:
     string = ""
     while n >= 0:
         string = chr((n % 26) + 65) + string
@@ -24,7 +25,7 @@ def col_idx_to_letter(n):
     return string
 
 # --- GIAO DIỆN KHÓA: CUỘN ĐƯỢC - KHÔNG BẤM ĐƯỢC ---
-def render_lock_screen():
+def render_lock_screen() -> None:
     """
     Inject CSS để vô hiệu hóa nút bấm và input,
     nhưng VẪN CHO PHÉP cuộn chuột để xem log.

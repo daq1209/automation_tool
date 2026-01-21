@@ -1,0 +1,10 @@
+bcrypt==5.0.0
+pydantic==2.12.5
+pytest==9.0.2
+mypy==1.19.1
+streamlit
+supabase
+gspread
+pandas
+requests
+google-auth

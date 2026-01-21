@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from src.repositories import db
-from src.services import importer, deleter, checker
+from src.repositories import db, woo
+from src.services import importer, deleter, checker, media_updater
 from src.utils.common import render_lock_screen, remove_lock_screen
 
 def local_css():
@@ -75,7 +75,7 @@ def render_dashboard():
     st.write("") 
 
     # 3. RENDER MAIN TABS
-    tab1, tab2 = st.tabs(["Import Pipeline (V12)", "Delete Tool"])
+    tab1, tab2, tab3 = st.tabs(["Import Pipeline (V12)", "Delete Tool", "Images"])
 
     # === TAB 1: IMPORT ===
     with tab1:
@@ -115,6 +115,77 @@ def render_dashboard():
     # === TAB 2: DELETE TOOL ===
     with tab2:
         render_delete_tool(sites, list(site_map.keys()), selected_option, default_tab_data, auto_threads)
+
+    # === TAB 3: IMAGES ===
+    with tab3:
+        st.markdown("#### Sync WordPress Media to Sheet")
+        
+        c_img1, c_img2 = st.columns(2)
+        with c_img1:
+            sheet_tab_name = st.text_input("Sheet Tab Name:", value="UpdateImage", key="img_sync_tab")
+        with c_img2:
+            limit_media = st.number_input("Max Media to Fetch:", min_value=10, max_value=50000, value=5000, step=500)
+            
+        st.info("Logic: Match by 'ID' or 'Old Slug'. If mismatch -> Error. If 'Slug' matches 'New Slug' -> Done.")
+        
+        if st.checkbox("Preview Sheet Data", key="img_preview_chk"):
+            render_data_preview(selected_site, sheet_tab_name)
+        
+        st.write("")
+        if st.button("RUN MEDIA SYNC", type="primary"):
+            lock = st.empty()
+            with lock: render_lock_screen()
+            try:
+                with st.status("Syncing Media...", expanded=True) as status:
+                    st.write("1. Fetching media from WordPress...")
+                    media_data = media_updater.fetch_all_media(selected_site['domain_url'], selected_site['secret_key'], limit_media)
+                    st.write(f"Found {len(media_data)} media items.")
+                    
+                    st.write("2. Syncing to Google Sheet...")
+                    result = media_updater.sync_media_to_sheet(selected_site['google_sheet_id'], sheet_tab_name, media_data)
+                    
+                    if "error" in result:
+                        status.update(label="Sync Failed!", state="error")
+                        st.error(result["error"])
+                    else:
+                        # DEBUG INFO
+                        if 'debug_info' in result:
+                            with st.expander("🔍 Debug Column Info"):
+                                st.json(result['debug_info'])
+                                
+                        msg = f"Updated Sheet: {result['updated']} | Created: {result['created']} | Total Scanned: {result['total']}"
+                        
+                        # Handle WP Updates
+                        if 'wp_updates_queued' in result:
+                            queued = result['wp_updates_queued']
+                            st.write(f"3. Updating {len(queued)} items on WordPress...")
+                            
+                            # Show preview of what will change
+                            if queued:
+                                st.caption("Preview of changes (Title & File Rename):")
+                                preview_data = [{
+                                    "ID": q['id'], 
+                                    "Old Title": q.get('old_title', ''), 
+                                    "New Title": q['title'],
+                                    "Target Slug": q.get('slug', '(auto)')
+                                } for q in queued]
+                                st.dataframe(preview_data, height=200)
+
+                            # Chunk updates to avoid timeout
+                            res_exe = media_updater.execute_wp_updates(selected_site['domain_url'], selected_site['secret_key'], queued)
+                            
+                            wp_updated_count = res_exe['updated_count']
+                            for log in res_exe['logs']:
+                                st.caption(log)
+                            
+                            msg += f" | WP Titles Updated: {wp_updated_count}"
+                        
+                        status.update(label="Sync Complete!", state="complete")
+                        st.success(msg)
+            except Exception as e:
+                st.error(f"Critical Error: {e}")
+            finally:
+                with lock: remove_lock_screen()
 
     # 4. RUN AUTO SYNC (CHAY NGAM)
     if selected_option != st.session_state['previous_site']:
@@ -162,7 +233,8 @@ def render_data_preview(site, tab_name, filter_ids=None):
                     id_key = id_keys[0]
                     mask = df[id_key].astype(str).str.strip().apply(lambda x: any(x.startswith(fid) for fid in filter_ids))
                     df = df[mask]
-            st.dataframe(df.head(10), use_container_width=True, hide_index=True)
+            st.info(f"Total rows: {len(df)}")
+            st.dataframe(df, use_container_width=True, hide_index=True, height=400)
         except Exception as e: st.error(f"Error: {e}")
 
 def run_import_v12(site, tab_name, threads, filter_ids=None):

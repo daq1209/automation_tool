@@ -2,6 +2,8 @@ import concurrent.futures
 import time
 from src.repositories import woo, db
 from src.utils.common import get_val, col_idx_to_letter
+from config import Config
+from src.utils.logger import logger
 
 # --- PHASE 1: BATCH TEXT PROCESSING ---
 def worker_import_batch_v12(rows_chunk, domain, secret, pub_col_letter):
@@ -66,11 +68,11 @@ def worker_trigger_loop(domain, secret):
         if res and res.get('status') == 'processing':
             processed_count += res.get('processed_count', 0)
             consecutive_empty = 0
-            time.sleep(0.5)
+            time.sleep(Config.PHASE_DELAY)
         elif res and res.get('status') == 'done':
             consecutive_empty += 1
             if consecutive_empty > 2: break 
-            time.sleep(2)
+            time.sleep(Config.WORKER_COMPLETION_DELAY)
         else:
             consecutive_empty += 1
             if consecutive_empty > 5: break
@@ -94,7 +96,7 @@ def process_import(data_rows, domain, secret, mode, sheet_id, tab_name, max_work
         
         logs.append(f"=== PHASE 1: DATA IMPORT (Pub Col: {pub_col_letter}) ===")
         
-        chunk_size = 50 
+        chunk_size = Config.CHUNK_SIZE
         chunks = [data_rows[i:i + chunk_size] for i in range(0, len(data_rows), chunk_size)]
         
         completed_batches = 0

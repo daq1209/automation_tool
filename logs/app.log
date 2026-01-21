@@ -1,0 +1,75 @@
+2026-01-21 10:44:29,657 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 10:44:30,565 - pod_automation - WARNING - Login successful (plaintext - DEPRECATED): admin@123
+2026-01-21 10:47:52,738 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 10:47:53,782 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 11:17:42,777 - pod_automation - ERROR - get_all_skus connection error on attempt 1: HTTPConnectionPool(host='invalid-domain-12345.com', port=80): Max retries exceeded with url: /wp-json/test-secret/v1/get-all-skus (Caused by NameResolutionError("HTTPConnection(host='invalid-domain-12345.com', port=80): Failed to resolve 'invalid-domain-12345.com' ([Errno 11001] getaddrinfo failed)"))
+2026-01-21 11:17:44,781 - pod_automation - ERROR - get_all_skus connection error on attempt 2: HTTPConnectionPool(host='invalid-domain-12345.com', port=80): Max retries exceeded with url: /wp-json/test-secret/v1/get-all-skus (Caused by NameResolutionError("HTTPConnection(host='invalid-domain-12345.com', port=80): Failed to resolve 'invalid-domain-12345.com' ([Errno 11001] getaddrinfo failed)"))
+2026-01-21 11:17:48,975 - pod_automation - ERROR - get_all_skus connection error on attempt 3: HTTPConnectionPool(host='invalid-domain-12345.com', port=80): Max retries exceeded with url: /wp-json/test-secret/v1/get-all-skus (Caused by NameResolutionError("HTTPConnection(host='invalid-domain-12345.com', port=80): Failed to resolve 'invalid-domain-12345.com' ([Errno 11001] getaddrinfo failed)"))
+2026-01-21 11:17:54,993 - pod_automation - ERROR - get_all_skus connection error on attempt 4: HTTPConnectionPool(host='invalid-domain-12345.com', port=80): Max retries exceeded with url: /wp-json/test-secret/v1/get-all-skus (Caused by NameResolutionError("HTTPConnection(host='invalid-domain-12345.com', port=80): Failed to resolve 'invalid-domain-12345.com' ([Errno 11001] getaddrinfo failed)"))
+2026-01-21 11:18:03,171 - pod_automation - ERROR - get_all_skus connection error on attempt 5: HTTPConnectionPool(host='invalid-domain-12345.com', port=80): Max retries exceeded with url: /wp-json/test-secret/v1/get-all-skus (Caused by NameResolutionError("HTTPConnection(host='invalid-domain-12345.com', port=80): Failed to resolve 'invalid-domain-12345.com' ([Errno 11001] getaddrinfo failed)"))
+2026-01-21 11:18:03,202 - pod_automation - ERROR - get_all_skus timeout on attempt 1: HTTPSConnectionPool(host='google.com', port=443): Max retries exceeded with url: /wp-json/test-secret/v1/get-all-skus (Caused by ConnectTimeoutError(<HTTPSConnection(host='google.com', port=443) at 0x1bcd4de62c0>, 'Connection to google.com timed out. (connect timeout=0.001)'))
+2026-01-21 11:18:05,212 - pod_automation - ERROR - get_all_skus timeout on attempt 2: HTTPSConnectionPool(host='google.com', port=443): Max retries exceeded with url: /wp-json/test-secret/v1/get-all-skus (Caused by ConnectTimeoutError(<HTTPSConnection(host='google.com', port=443) at 0x1bcd4e40070>, 'Connection to google.com timed out. (connect timeout=0.001)'))
+2026-01-21 11:35:40,128 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 11:35:42,084 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 11:36:35,037 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 11:36:35,607 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 11:38:20,925 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 11:38:21,958 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 11:39:34,021 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 11:39:35,141 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 11:42:22,163 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 11:42:25,147 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 11:44:05,865 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 11:44:06,796 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 11:46:12,923 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 11:46:13,971 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 11:59:44,895 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 11:59:46,051 - pod_automation - WARNING - Login failed (invalid password): admin@123
+2026-01-21 12:00:37,128 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 12:00:37,855 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 12:01:49,804 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 12:01:51,249 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 12:04:06,126 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 12:04:07,120 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 13:48:38,733 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 13:48:40,607 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 13:49:38,910 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 13:49:39,883 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 14:11:54,894 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 14:11:56,072 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 14:14:07,083 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 14:14:07,909 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 14:17:09,686 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 14:17:10,206 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 14:22:03,317 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 14:22:04,388 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 14:22:04,954 - pod_automation - WARNING - Login failed (invalid password): admin@123
+2026-01-21 14:22:04,954 - pod_automation - WARNING - Login failed (invalid password): admin@123
+2026-01-21 14:22:09,115 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 14:22:09,509 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 14:29:03,995 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 14:29:04,986 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 14:31:58,472 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 14:31:59,247 - pod_automation - WARNING - Login failed (invalid password): admin@123
+2026-01-21 14:32:03,923 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 14:32:04,285 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 15:00:05,856 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 15:00:07,247 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 15:05:27,154 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 15:05:28,193 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 15:05:50,384 - pod_automation - INFO - Sending 1 media updates to WordPress...
+2026-01-21 15:07:11,197 - pod_automation - INFO - Sending 1 media updates to WordPress...
+2026-01-21 15:08:48,620 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 15:08:49,382 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 15:09:09,810 - pod_automation - INFO - Sending 1 media updates to WordPress...
+2026-01-21 15:11:46,818 - pod_automation - INFO - Sending 1 media updates to WordPress...
+2026-01-21 15:14:21,071 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 15:14:22,272 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 15:14:43,107 - pod_automation - INFO - Sending 1 media updates to WordPress...
+2026-01-21 15:16:05,457 - pod_automation - INFO - Sending 1 media updates to WordPress...
+2026-01-21 15:33:12,056 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 15:33:13,005 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 15:36:35,493 - pod_automation - INFO - Login attempt for user: admin@123
+2026-01-21 15:36:36,310 - pod_automation - INFO - Login successful (hashed): admin@123
+2026-01-21 15:37:04,676 - pod_automation - ERROR - fetch_media_preview_custom failed: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2026-01-21 15:40:46,964 - pod_automation - INFO - Sending 1 media updates to WordPress...

@@ -2,13 +2,21 @@ import streamlit as st
 from src.repositories import db
 
 def render_login():
-    st.markdown("<h2 style='text-align:center'>Login</h2>", unsafe_allow_html=True)
-    with st.form("login"):
-        u = st.text_input("Username")
-        p = st.text_input("Password", type="password")
-        if st.form_submit_button("LOGIN"):
-            if db.check_admin_login(u, p):
-                st.session_state['is_logged_in'] = True
-                st.rerun()
+    """Render login page"""
+    st.title("POD Automation Login")
+    
+    with st.form("login_form"):
+        username = st.text_input("Username:")
+        password = st.text_input("Password:", type="password")
+        submit = st.form_submit_button("Login", type="primary")
+        
+        if submit:
+            if not username or not password:
+                st.error("Please fill in both fields")
             else:
-                st.error("Incorrect username or password")
+                if db.check_admin_login(username, password):
+                    st.session_state['is_logged_in'] = True
+                    st.success("Login successful!")
+                    st.rerun()
+                else:
+                    st.error("Invalid credentials")

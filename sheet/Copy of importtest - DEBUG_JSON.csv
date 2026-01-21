@@ -1,0 +1,73 @@
+"{
+  ""rowIndex"": 2,
+  ""errors"": [],
+  ""payload"": {
+    ""id"": ""46090"",
+    ""ident"": {
+      ""by"": ""id"",
+      ""value"": ""46090""
+    },
+    ""type"": ""simple""
+  }
+}",,
+30/12/2025 10:41:45,Preview ROW2 payload,"{
+  ""raw"": {
+    ""id"": ""46090"",
+    ""ident"": {
+      ""by"": ""id"",
+      ""value"": ""46090""
+    },
+    ""type"": ""simple""
+  },
+  ""normalized"": {
+    ""id"": ""46090"",
+    ""ident"": {
+      ""by"": ""id"",
+      ""value"": ""46090""
+    },
+    ""type"": ""simple""
+  },
+  ""validation_errors"": []
+}"
+30/12/2025 10:43:29,Preview ROW2 payload,"{
+  ""raw"": {
+    ""id"": ""46090"",
+    ""ident"": {
+      ""by"": ""id"",
+      ""value"": ""46090""
+    },
+    ""type"": ""simple"",
+    ""name"": ""New York Jets Hawaiian Shirt - Football Wave Green Black""
+  },
+  ""normalized"": {
+    ""id"": ""46090"",
+    ""ident"": {
+      ""by"": ""id"",
+      ""value"": ""46090""
+    },
+    ""type"": ""simple"",
+    ""name"": ""New York Jets Hawaiian Shirt - Football Wave Green Black""
+  },
+  ""validation_errors"": []
+}"
+30/12/2025 10:46:01,Preview ROW2 payload,"{
+  ""raw"": {
+    ""id"": ""46090"",
+    ""ident"": {
+      ""by"": ""id"",
+      ""value"": ""46090""
+    },
+    ""type"": ""simple"",
+    ""name"": ""New York Jets Hawaiian Shirt - Football Wave Green Black""
+  },
+  ""normalized"": {
+    ""id"": ""46090"",
+    ""ident"": {
+      ""by"": ""id"",
+      ""value"": ""46090""
+    },
+    ""type"": ""simple"",
+    ""name"": ""New York Jets Hawaiian Shirt - Football Wave Green Black""
+  },
+  ""validation_errors"": []
+}"

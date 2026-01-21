@@ -1,0 +1,364 @@
+/**
+ * Snippet Name: POD Automation API (V12.5 Enterprise)
+ * Description: API Import, Delete, Fast SKU Fetch, Dedup Images & Dynamic Security Key.
+ * Version: 12.5
+ */
+
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+// ======================================================
+// 1. GIAO DIỆN QUẢN LÝ KEY (SETTINGS PAGE)
+// ======================================================
+
+// Thêm menu vào Settings
+add_action('admin_menu', function() {
+    add_options_page(
+        'POD Automation Key',       // Page Title
+        'POD Automation Key',       // Menu Title
+        'manage_options',           // Capability
+        'pod-automation-keys',      // Slug
+        'render_pod_settings_page'  // Callback function
+    );
+});
+
+// Hàm vẽ giao diện Settings
+function render_pod_settings_page() {
+    if (!current_user_can('manage_options')) return;
+
+    // Xử lý khi bấm nút "Tạo lại Key"
+    if (isset($_POST['regenerate_key']) && check_admin_referer('pod_regen_action', 'pod_regen_nonce')) {
+        $new_key = wp_generate_password(64, true, true);
+        update_option('pod_automation_secret_key', $new_key);
+        echo '<div class="updated notice is-dismissible"><p><strong>✅ Success:</strong> Key bảo mật mới đã được tạo!</p></div>';
+    }
+
+    // Lấy key hiện tại từ Database
+    $current_key = get_option('pod_automation_secret_key');
+    
+    // Nếu chưa có (lần đầu cài), tự tạo luôn
+    if (!$current_key) {
+        $current_key = wp_generate_password(64, true, true);
+        update_option('pod_automation_secret_key', $current_key);
+    }
+    ?>
+    <div class="wrap">
+        <h1>🔐 POD Automation Security (V12.5)</h1>
+        
+        <div class="card" style="max-width: 800px; padding: 20px; margin-top: 20px; border-left: 4px solid #0073aa;">
+            <h3>API Secret Key (Dynamic)</h3>
+            <p>Dưới đây là Key bảo mật dành riêng cho website này. Hãy copy nó và cập nhật vào <strong>Database Supabase</strong> (cột <code>secret_key</code>).</p>
+            
+            <textarea readonly style="width:100%; height:80px; background:#f0f0f1; font-family:monospace; font-size:14px; color:#2271b1; border:1px solid #ccc; border-radius:4px; padding:10px;" onclick="this.select()"><?php echo esc_textarea($current_key); ?></textarea>
+            
+            <p class="description">Key này thay thế cho việc hardcode trong file PHP. Giúp bảo mật tuyệt đối.</p>
+        </div>
+
+        <div class="card" style="max-width: 800px; padding: 20px; margin-top: 20px; border-left: 4px solid #dc3232;">
+            <h3>Vùng Nguy Hiểm</h3>
+            <form method="post">
+                <?php wp_nonce_field('pod_regen_action', 'pod_regen_nonce'); ?>
+                <p style="color: #dc3232;">⚠️ <strong>Cảnh báo:</strong> Nếu bạn nghi ngờ Key bị lộ, hãy bấm nút dưới đây. Key cũ sẽ bị vô hiệu hóa ngay lập tức và Tool sẽ không kết nối được cho đến khi bạn cập nhật Key mới.</p>
+                <input type="submit" name="regenerate_key" class="button button-link-delete" value="Hủy Key cũ & Tạo Key mới" onclick="return confirm('CẢNH BÁO: Tool Python sẽ ngừng hoạt động cho đến khi bạn cập nhật Key mới vào Supabase. Bạn có chắc chắn không?');" />
+            </form>
+        </div>
+    </div>
+    <?php
+}
+
+// ======================================================
+// 2. KHỞI TẠO API ROUTE
+// ======================================================
+
+add_action( 'rest_api_init', function () {
+    $ns = 'test-secret/v1'; // Namespace
+
+    // API 1: Lấy toàn bộ SKU siêu tốc (V12.3)
+    register_rest_route( $ns, '/get-all-skus', [ 'methods' => 'GET', 'callback' => 'handle_get_all_skus', 'permission_callback' => '__return_true' ]);
+    
+    // API 2: Import Data & Queue Images (V12.2)
+    register_rest_route( $ns, '/import-product-batch', [ 'methods' => 'POST', 'callback' => 'handle_import_data_batch_v12', 'permission_callback' => '__return_true' ]);
+    
+    // API 3: Process Images Worker + Dedup (V12.4)
+    register_rest_route( $ns, '/process-pending-media', [ 'methods' => 'POST', 'callback' => 'handle_process_pending_media_v12_4', 'permission_callback' => '__return_true' ]);
+    
+    // Các API phụ trợ (Delete, Check, List...)
+    register_rest_route( $ns, '/check-product', [ 'methods' => 'POST', 'callback' => 'handle_check_product_exists', 'permission_callback' => '__return_true' ]);
+    register_rest_route( $ns, '/delete-product-batch', [ 'methods' => 'POST', 'callback' => 'handle_delete_product_batch', 'permission_callback' => '__return_true' ]);
+    register_rest_route( $ns, '/delete-media-batch', [ 'methods' => 'POST', 'callback' => 'handle_delete_media_batch', 'permission_callback' => '__return_true' ]);
+    register_rest_route( $ns, '/get-product-list', [ 'methods' => 'GET', 'callback' => 'handle_get_product_list_custom', 'permission_callback' => '__return_true' ]);
+    register_rest_route( $ns, '/get-media-list', [ 'methods' => 'GET', 'callback' => 'handle_get_media_list', 'permission_callback' => '__return_true' ]);
+    register_rest_route( $ns, '/get-all-media-ids', [ 'methods' => 'GET', 'callback' => 'handle_get_all_media_ids', 'permission_callback' => '__return_true' ]);
+    register_rest_route( $ns, '/update-media-batch', [ 'methods' => 'POST', 'callback' => 'handle_update_media_batch', 'permission_callback' => '__return_true' ]);
+});
+
+// ======================================================
+// 3. HÀM CHECK KEY BẢO MẬT (QUAN TRỌNG)
+// ======================================================
+
+function check_key( $req ) { 
+    // Lấy key gửi lên từ Header
+    $header_secret = $req->get_header( 'x-secret' ); 
+    if (empty($header_secret)) $header_secret = $_SERVER['HTTP_X_SECRET'] ?? ''; 
+    
+    // Lấy key lưu trong Database của Web
+    $db_secret = get_option('pod_automation_secret_key');
+    
+    // So sánh (Dùng hash_equals để chống Timing Attack)
+    return $header_secret && $db_secret && hash_equals( $db_secret, $header_secret ); 
+}
+
+function err( $msg, $code ) { 
+    return new WP_REST_Response( ['status'=>'error', 'message'=>$msg], $code ); 
+}
+
+// ======================================================
+// 4. LOGIC XỬ LÝ (CORE FUNCTIONS)
+// ======================================================
+
+// --- [V12.3] Lấy toàn bộ SKU (Siêu tốc bằng SQL thuần) ---
+function handle_get_all_skus( WP_REST_Request $request ) {
+    if ( ! check_key( $request ) ) return err('Invalid Key', 401);
+    global $wpdb;
+    
+    // Query trực tiếp bảng postmeta để lấy SKU cực nhanh
+    $results = $wpdb->get_results( "
+        SELECT p.ID, pm.meta_value as sku 
+        FROM {$wpdb->posts} p 
+        INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
+        WHERE p.post_type = 'product' 
+        AND p.post_status = 'publish' 
+        AND pm.meta_key = '_sku'
+    " );
+
+    $skus = [];
+    foreach($results as $r) {
+        if (!empty($r->sku)) $skus[] = (string)$r->sku;
+        $skus[] = (string)$r->ID; // Lấy cả ID để đối chiếu cho chắc
+    }
+
+    return new WP_REST_Response(['skus' => $skus, 'count' => count($skus)], 200);
+}
+
+// --- [V12.2] Import Text & Tạo Queue Ảnh ---
+function handle_import_data_batch_v12( WP_REST_Request $request ) {
+    if ( ! check_key( $request ) ) return err('Invalid Key', 401);
+    set_time_limit(300); // 5 phút timeout cho PHP
+    
+    $params = $request->get_json_params();
+    $products = $params['products'] ?? [];
+    if ( empty($products) ) return err('No products provided', 400);
+
+    $results = [];
+    
+    // Tạm dừng đếm comment/term để tăng tốc insert
+    wp_defer_term_counting(true); 
+    wp_defer_comment_counting(true);
+
+    foreach ( $products as $p ) {
+        $sku = sanitize_text_field( $p['sku'] ?? '' );
+        if ( empty($sku) ) { $results[] = ['sku' => '', 'status' => 'error', 'message' => 'Missing SKU']; continue; }
+
+        try {
+            // Check tồn tại
+            $pid = wc_get_product_id_by_sku( $sku );
+            if ( $pid ) { 
+                $product = wc_get_product( $pid ); 
+            } else { 
+                $product = new WC_Product_Simple(); 
+                $product->set_sku( $sku ); 
+            }
+
+            // Update thông tin cơ bản
+            $product->set_name( sanitize_text_field( $p['title'] ?? '' ) );
+            if ( isset($p['price']) ) $product->set_regular_price( $p['price'] );
+            if ( isset($p['description']) ) $product->set_description( wp_kses_post( $p['description'] ) );
+            $product->set_status( 'publish' );
+            
+            // Queue ảnh (Không tải ngay)
+            if ( !empty($p['images']) && is_array($p['images']) ) {
+                $product->update_meta_data( '_pending_image_queue', json_encode($p['images']) );
+                $product->update_meta_data( '_has_pending_media', 'yes' ); 
+            }
+
+            $product->save();
+            $results[] = ['sku' => $sku, 'status' => 'success', 'id' => $product->get_id()];
+        } catch ( Exception $e ) {
+            $results[] = ['sku' => $sku, 'status' => 'error', 'message' => $e->getMessage()];
+        }
+    }
+    
+    wp_defer_term_counting(false); 
+    wp_defer_comment_counting(false);
+    
+    return new WP_REST_Response(['status'=>'success', 'results'=> $results], 200);
+}
+
+// --- [V12.4] Worker xử lý ảnh + Chống trùng lặp (Dedup) ---
+function handle_process_pending_media_v12_4( WP_REST_Request $request ) {
+    if ( ! check_key( $request ) ) return err('Invalid Key', 401);
+    set_time_limit(0); // Không giới hạn thời gian cho worker
+
+    $limit = $request->get_param('limit') ? intval($request->get_param('limit')) : 1;
+    global $wpdb;
+
+    // 1. Tìm & Khóa (Atomic Lock)
+    $pids = $wpdb->get_col( $wpdb->prepare(
+        "SELECT post_id FROM {$wpdb->postmeta} 
+         WHERE meta_key = '_has_pending_media' AND meta_value = 'yes' 
+         LIMIT %d", $limit
+    ));
+
+    if ( empty($pids) ) return new WP_REST_Response(['status'=>'done', 'message'=>'Queue empty'], 200);
+
+    // Đánh dấu là đang xử lý ngay lập tức
+    $id_list = implode(',', array_map('intval', $pids));
+    $wpdb->query("UPDATE {$wpdb->postmeta} SET meta_value = 'processing' WHERE meta_key = '_has_pending_media' AND post_id IN ($id_list)");
+
+    // Load thư viện Media của WP
+    require_once( ABSPATH . 'wp-admin/includes/media.php' );
+    require_once( ABSPATH . 'wp-admin/includes/file.php' );
+    require_once( ABSPATH . 'wp-admin/includes/image.php' );
+    
+    // Tối ưu: Chỉ tạo size thumbnail, không tạo size medium/large thừa thãi
+    add_filter( 'intermediate_image_sizes', function($sizes){ return ['thumbnail']; } );
+
+    $processed = [];
+    foreach ( $pids as $pid ) {
+        $product = wc_get_product( $pid );
+        if ( ! $product ) continue;
+
+        $queue_json = $product->get_meta( '_pending_image_queue' );
+        $images = json_decode( $queue_json, true );
+
+        if ( !empty($images) ) {
+            $gallery = [];
+            foreach( $images as $i => $url ) {
+                $url = esc_url_raw($url); if(!$url) continue;
+                
+                // --- LOGIC CHỐNG TRÙNG LẶP (SMART DEDUP) ---
+                $url_hash = md5($url); // Mã hóa URL thành chuỗi ngắn
+                $mid = 0;
+
+                // Check DB xem ảnh này có chưa
+                $existing_att_id = $wpdb->get_var( $wpdb->prepare(
+                    "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_source_url_hash' AND meta_value = %s LIMIT 1", 
+                    $url_hash
+                ));
+
+                // Nếu có rồi và file còn tồn tại -> Tái sử dụng ID
+                if ( $existing_att_id && wp_attachment_is_image( $existing_att_id ) ) {
+                    $mid = $existing_att_id; 
+                }
+
+                // Nếu chưa có -> Tải mới
+                if ( !$mid ) {
+                    $mid = media_sideload_image($url, $pid, null, 'id');
+                    if( !is_wp_error($mid) ) {
+                        // Lưu dấu vân tay (Hash) của ảnh mới
+                        update_post_meta( $mid, '_source_url_hash', $url_hash );
+                    }
+                }
+                
+                // Gắn vào sản phẩm
+                if( $mid && !is_wp_error($mid) ) {
+                    if($i === 0) $product->set_image_id($mid); // Ảnh đại diện
+                    else $gallery[] = $mid; // Ảnh gallery
+                }
+            }
+            if($gallery) $product->set_gallery_image_ids($gallery);
+        }
+
+        // Dọn dẹp cờ
+        $product->delete_meta_data( '_pending_image_queue' );
+        $product->delete_meta_data( '_has_pending_media' );
+        $product->save();
+        $processed[] = $pid;
+    }
+
+    return new WP_REST_Response(['status'=>'processing', 'processed_count'=>count($processed), 'ids'=>$processed], 200);
+}
+
+// ======================================================
+// 5. CÁC HÀM PHỤ TRỢ (HELPER FUNCTIONS)
+// ======================================================
+
+function handle_check_product_exists($r){ $sku=$r['sku']??''; if(get_post_status($sku)||wc_get_product_id_by_sku($sku))return new WP_REST_Response(['status'=>'exists'],200); return new WP_REST_Response(['status'=>'not_found'],200);}
+function handle_get_product_list_custom($r){ global $wpdb; $l=$r['limit']??50; $s=$r['search']; $q="SELECT p.ID,p.post_title,p.post_status,pm.meta_value as sku FROM {$wpdb->posts} p LEFT JOIN {$wpdb->postmeta} pm ON (p.ID=pm.post_id AND pm.meta_key='_sku') WHERE p.post_type='product' AND p.post_status!='trash'"; if($s){$like=$wpdb->esc_like($s).'%'; $q.=$wpdb->prepare(" AND (p.ID LIKE %s OR pm.meta_value LIKE %s)",$like,$like);} $q.=" ORDER BY p.ID DESC LIMIT %d"; $res=$wpdb->get_results($wpdb->prepare($q,$l)); $d=[]; foreach($res as $o){$tid=get_post_thumbnail_id($o->ID); $d[]=['id'=>$o->ID,'name'=>$o->post_title,'sku'=>$o->sku,'status'=>$o->post_status,'image'=>$tid?wp_get_attachment_image_url($tid,'thumbnail'):''];} return new WP_REST_Response($d,200);}
+function handle_get_media_list($r){ global $wpdb; $l=$r['limit']??50; $res=$wpdb->get_results($wpdb->prepare("SELECT ID,post_date,post_title FROM {$wpdb->posts} WHERE post_type='attachment' ORDER BY ID DESC LIMIT %d",$l)); $d=[]; foreach($res as $p){$u=wp_get_attachment_url($p->ID); $d[]=['id'=>$p->ID,'url'=>$u,'title'=>$p->post_title,'date'=>$p->post_date];} return new WP_REST_Response($d,200);}
+function handle_delete_product_batch($r){$p=$r->get_json_params(); $c=0; $d=[]; foreach($p['ids']??[] as $id){if(wp_delete_post($id,true)){$c++;$d[]=$id;}} return new WP_REST_Response(['status'=>'success','deleted_count'=>$c,'deleted_items'=>$d],200);}
+function handle_delete_media_batch($r){$c=0; foreach($r['ids']??[] as $id)if(wp_delete_attachment($id,true))$c++; return new WP_REST_Response(['success'=>true],200);}
+function handle_get_all_media_ids($r){return new WP_REST_Response(['ids'=>get_posts(['post_type'=>'attachment','fields'=>'ids','posts_per_page'=>-1])],200);}
+function handle_update_media_batch($r){
+    $params = $r->get_json_params();
+    $updates = $params['updates'] ?? [];
+    $count = 0;
+    $results = [];
+
+    // Load WP Media API
+    if(!function_exists('wp_generate_attachment_metadata')) {
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+    }
+
+    foreach($updates as $u) {
+        $id = intval($u['id'] ?? 0);
+        $title = sanitize_text_field($u['title'] ?? '');
+        $slug = sanitize_title($u['slug'] ?? ''); // Target slug
+
+        if(!$id) continue;
+
+        // 1. Update Title & Check Slug
+        $args = ['ID' => $id];
+        if($title) $args['post_title'] = $title;
+        if($slug) $args['post_name'] = $slug;
+
+        $updated = wp_update_post($args);
+
+        if (!is_wp_error($updated)) {
+            // 2. FILE RENAME LOGIC (EXPERIMENTAL)
+            $msg = "Title Updated";
+            $debug_ren = "Ignored";
+            
+            if($slug) {
+                $old_path = get_attached_file($id);
+                $path_info = pathinfo($old_path);
+                $ext = $path_info['extension'] ?? '';
+                $dir = $path_info['dirname'] ?? '';
+                
+                if($ext && $dir) {
+                    $new_filename = $slug . '.' . $ext;
+                    $new_path = $dir . '/' . $new_filename;
+                    
+                    $debug_ren = "Old: $old_path | New: $new_path";
+
+                    // Only rename if different and doesn't exist
+                    if($old_path === $new_path) {
+                        $debug_ren .= " (Same Path)";
+                    } elseif(file_exists($new_path)) {
+                        $debug_ren .= " (Target Exists)";
+                    } else {
+                        if(rename($old_path, $new_path)) {
+                            update_attached_file($id, $new_path);
+                            // Optional: Regenerate Thumbnails (Heavy!)
+                            $meta = wp_generate_attachment_metadata($id, $new_path);
+                            wp_update_attachment_metadata($id, $meta);
+                            $msg .= " & File Renamed to $new_filename";
+                            $debug_ren .= " (Success)";
+                        } else {
+                            $debug_ren .= " (Rename Func Failed - Check Perms)";
+                            $msg .= " (File Rename Failed)";
+                        }
+                    }
+                } else {
+                   $debug_ren = "Invalid Path Info"; 
+                }
+            }
+            $count++;
+            $results[] = ['id' => $id, 'status' => 'success', 'msg' => $msg, 'debug' => $debug_ren];
+        } else {
+            $results[] = ['id' => $id, 'status' => 'error', 'msg' => $updated->get_error_message()];
+        }
+    }
+    return new WP_REST_Response(['status'=>'success', 'updated_count'=>$count, 'details'=>$results], 200);
+}
