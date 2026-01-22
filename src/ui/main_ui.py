@@ -150,7 +150,7 @@ def render_dashboard():
                     else:
                         # DEBUG INFO
                         if 'debug_info' in result:
-                            with st.expander("🔍 Debug Column Info"):
+                            with st.expander("Debug Column Info"):
                                 st.json(result['debug_info'])
                                 
                         msg = f"Updated Sheet: {result['updated']} | Created: {result['created']} | Total Scanned: {result['total']}"
