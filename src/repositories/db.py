@@ -25,11 +25,11 @@ except Exception as e:
 def init_supabase():
     try:
         if not SUPA_URL or not SUPA_KEY:
-            print("DEBUG: Thiếu URL hoặc Key!")
+            st.error("DEBUG INFO: Không tìm thấy URL hoặc Key trong Secrets!")
             return None
         return create_client(SUPA_URL, SUPA_KEY)
     except Exception as e:
-        print(f"Supabase Init Error: {e}")
+        st.error(f"DEBUG INFO: Lỗi khởi tạo Supabase: {str(e)}")
         return None
 
 @st.cache_resource
