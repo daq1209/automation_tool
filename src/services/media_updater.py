@@ -88,12 +88,19 @@ def sync_media_to_sheet(sheet_id: str, tab_name: str, media_data: List[Dict]) ->
                 # Keep original too just in case
                 col_map[h] = i
         
+        # Helper to safely get column index (handling 0 as valid index)
+        def get_col_index(candidates, mapping):
+            for c in candidates:
+                if c in mapping:
+                    return mapping[c]
+            return None
+
         # Required columns
-        id_col = col_map.get('id') or col_map.get('image_id') or col_map.get('product_id')
-        old_slug_col = col_map.get('old_slug') or col_map.get('slug') or col_map.get('slug_old')
-        new_slug_col = col_map.get('slug_new') or col_map.get('new_slug')
-        check_col = col_map.get('check_update') or col_map.get('status') or col_map.get('update_status')
-        name_new_col = col_map.get('name_new') or col_map.get('new_name') or col_map.get('title_new')
+        id_col = get_col_index(['id', 'image_id', 'product_id', 'image id'], col_map)
+        old_slug_col = get_col_index(['old_slug', 'slug', 'slug_old'], col_map)
+        new_slug_col = get_col_index(['slug_new', 'new_slug', 'new slug'], col_map)
+        check_col = get_col_index(['check_update', 'status', 'update_status'], col_map)
+        name_new_col = get_col_index(['name_new', 'new_name', 'title_new', 'name new', 'new name'], col_map)
         
         updated_count = 0
         created_count = 0
