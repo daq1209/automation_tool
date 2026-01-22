@@ -99,7 +99,14 @@ def render_dashboard():
         st.write("")
         st.info("Note: Successful imports -> 'Done' | Published -> '1'")
         
-        if st.checkbox("Preview Data (Applied Filter)", value=False):
+        c_preview, c_refresh = st.columns([2, 1])
+        with c_preview:
+            show_preview = st.checkbox("Preview Data (Applied Filter)", value=False)
+        with c_refresh:
+            if show_preview and st.button("🔄 Refresh Data", key="refresh_import"):
+                st.rerun()
+
+        if show_preview:
             render_data_preview(selected_site, default_tab_data, filter_ids)
         
         st.write("")
@@ -128,7 +135,14 @@ def render_dashboard():
             
         st.info("Logic: Match by 'ID' or 'Old Slug'. If mismatch -> Error. If 'Slug' matches 'New Slug' -> Done.")
         
-        if st.checkbox("Preview Sheet Data", key="img_preview_chk"):
+        c_img_prev, c_img_ref = st.columns([2, 1])
+        with c_img_prev:
+            show_img_preview = st.checkbox("Preview Sheet Data", key="img_preview_chk")
+        with c_img_ref:
+            if show_img_preview and st.button("🔄 Refresh Data", key="refresh_images"):
+                st.rerun()
+
+        if show_img_preview:
             render_data_preview(selected_site, sheet_tab_name)
         
         st.write("")
