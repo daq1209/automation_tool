@@ -129,13 +129,30 @@ def sync_media_to_sheet(sheet_id: str, tab_name: str, media_data: List[Dict]) ->
                 updates_needed = False
                 
                 # Check status
-                current_slug = existing_row[old_slug_col] if old_slug_col is not None and old_slug_col < len(existing_row) else ''
-                new_slug_val = existing_row[new_slug_col] if new_slug_col is not None and new_slug_col < len(existing_row) else ''
+                # Check status
+                current_slug = str(existing_row[old_slug_col]).strip() if old_slug_col is not None and old_slug_col < len(existing_row) else ''
+                new_slug_val = str(existing_row[new_slug_col]).strip() if new_slug_col is not None and new_slug_col < len(existing_row) else ''
                 
-                if slug == new_slug_val: status = "Done"
-                elif slug == current_slug: status = "holding"
-                else: status = "error"
+                # Check Title (Name New)
+                name_new_val = str(existing_row[name_new_col]).strip() if name_new_col is not None and name_new_col < len(existing_row) else ''
+                current_wp_title = str(media.get('title', '')).strip()
                 
+                # Logic: Done = Title matches New Name AND Slug matches New Slug
+                # Logic: Holding = Slug matches Old Slug (Title might not be updated yet)
+                # Logic: Error = Anything else (Inconsistent state)
+                
+                status = "Error" # Default
+                
+                if name_new_val and new_slug_val:
+                    if slug == new_slug_val and current_wp_title == name_new_val:
+                        status = "Done"
+                    elif slug == current_slug:
+                        status = "Holding"
+                    else:
+                        status = "Error"
+                elif slug == current_slug:
+                     status = "Holding"
+
                 # Add status update to batch
                 if check_col is not None:
                     batch_updates.append({
