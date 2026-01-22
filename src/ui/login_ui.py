@@ -3,7 +3,7 @@ from src.repositories import db
 
 def render_login():
     """Render login page"""
-    st.title("POD Automation Login")
+    st.title("POD Automation Login (V2)")
     
     with st.form("login_form"):
         username = st.text_input("Username:")
