@@ -101,6 +101,7 @@ def sync_media_to_sheet(sheet_id: str, tab_name: str, media_data: List[Dict]) ->
         new_slug_col = get_col_index(['slug_new', 'new_slug', 'new slug'], col_map)
         check_col = get_col_index(['check_update', 'status', 'update_status'], col_map)
         name_new_col = get_col_index(['name_new', 'new_name', 'title_new', 'name new', 'new name'], col_map)
+        api_note_col = get_col_index(['api_note', 'note', 'api note'], col_map)
         
         updated_count = 0
         created_count = 0
@@ -128,7 +129,8 @@ def sync_media_to_sheet(sheet_id: str, tab_name: str, media_data: List[Dict]) ->
             "Old_Slug": old_slug_col,
             "New_Slug": new_slug_col,
             "Check_Update": check_col,
-            "New_Name": name_new_col
+            "New_Name": name_new_col,
+            "API_Note": api_note_col
         }
 
         # Process each media item
@@ -181,6 +183,18 @@ def sync_media_to_sheet(sheet_id: str, tab_name: str, media_data: List[Dict]) ->
                         'values': [[status]]
                     })
                     updates_needed = True
+
+                # [NEW] Update API Note: RENAMED if slug matches new_slug, else empty
+                if api_note_col is not None:
+                    note = "RENAMED" if new_slug_val and slug == new_slug_val else ""
+                    # Check if update is strictly needed to save quota
+                    current_note = str(existing_row[api_note_col]).strip() if api_note_col < len(existing_row) else ''
+                    if current_note != note:
+                        batch_updates.append({
+                            'range': f"{col_idx_to_letter(api_note_col)}{row_num}",
+                            'values': [[note]]
+                        })
+                        updates_needed = True
 
                 # Update Image ID if empty
                 if id_col is not None:
