@@ -1,9 +1,9 @@
 # POD Automation System 🚀
 
-> **Version:** V12.5 Enterprise (Quick Wins - Phase 1 Completed)  
-> **Last Updated:** 2026-01-21
+> **Version:** V13.0 Enterprise (Cloud Deployment & Enhanced Sync Logic)  
+> **Last Updated:** 2026-01-22
 
-An internal automation system for synchronizing product data between Google Sheets and WordPress/WooCommerce via custom APIs.
+An internal automation system for synchronizing product data between Google Sheets and WordPress/WooCommerce via custom APIs. Now successfully deployed on **Streamlit Cloud**.
 
 ---
 
@@ -110,6 +110,13 @@ test/
 - **Queue system:** Background image processing
 - **Deduplication:** Prevent duplicate images
 - **Auto-sync:** Updates Google Sheet statuses
+
+### Smart Image Sync (New in V13)
+- **Status Logic:**
+  - `Done`: Both Title AND Slug match the new values.
+  - `Holding`: Slug still matches the old value (pending update).
+  - `Error`: Mismatch or update failure.
+- **Bi-directional Check:** strict validation of Title & Slug.
 
 ### Delete Tool
 - **Batch deletion:** Products & media
@@ -225,6 +232,11 @@ Check that Google Sheet has required columns:
 ---
 
 ## 📝 Changelog
+
+### 2026-01-22 - V13.0 Cloud Deployment
+- 🚀 **Deployed to Streamlit Cloud:** Migrated from Google Colab for 24/7 stability.
+- ✨ **Enhanced UpdateImage Logic:** Added strict `Done`/`Holding`/`Error` status based on Title & Slug verification.
+- 🐛 **Fixed Column Mapping:** Improved sheet column detection (case-insensitive, space-friendly).
 
 ### 2026-01-21 - Quick Wins (Phase 1)
 - ✅ Implemented bcrypt password hashing
