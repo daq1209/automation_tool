@@ -95,7 +95,25 @@ def sync_media_to_sheet(sheet_id: str, tab_name: str, media_data: List[Dict]) ->
         check_col = col_map.get('check_update') or col_map.get('status') or col_map.get('update_status')
         name_new_col = col_map.get('name_new') or col_map.get('new_name') or col_map.get('title_new')
         
-        # ... (rest of the function)
+        updated_count = 0
+        created_count = 0
+        
+        # Create index for fast lookup
+        sheet_data = {}
+        for r_idx, row in enumerate(rows):
+            row_id = row[id_col] if id_col is not None and id_col < len(row) else None
+            row_slug = row[old_slug_col] if old_slug_col is not None and old_slug_col < len(row) else None
+            
+            if row_id:
+                sheet_data[row_id] = (r_idx + 2, row)  # +2 for header and 1-indexed
+            if row_slug:
+                sheet_data[row_slug] = (r_idx + 2, row)
+        
+        # Prepare batch updates and appends
+        batch_updates = []
+        new_rows_data = []
+        wp_updates = [] # Initialize queue for WP updates
+        trace_logs = [] # Debug trace
 
         # Mapping verification for Debug
         mapped_cols = {
