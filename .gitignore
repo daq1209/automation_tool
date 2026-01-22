@@ -9,16 +9,30 @@ service_account.json
 # Bỏ qua các file môi trường
 .env
 
-# --- RÁC HỆ THỐNG ---
-# Bỏ qua thư mục ảo Python
+# --- DATA & LOGS (SECURITY) ---
+# Logs
+logs/
+*.log
+
+# Data Sheets (Customer Data)
+sheet/*.csv
+sheet/*.xlsx
+sheet/*.xls
+
+# Migrations (Database Data)
+migrations/
+*.sql
+
+# --- SYSTEM JUNK ---
+# Python Virtual Env
 venv/
 env/
 .venv/
 
-# Bỏ qua file cache của Python (rất nhiều file rác)
+# Python Cache
 __pycache__/
 *.pyc
 
-# Bỏ qua file hệ điều hành
+# OS Files
 .DS_Store
 Thumbs.db
