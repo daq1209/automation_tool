@@ -85,6 +85,21 @@ Internal automation system for synchronizing product data between Google Sheets 
 
 ---
 
+## Version History / Lịch sử Phiên bản
+
+### 2026-01-22 - V13.0 Cloud Deployment
+- **Deployed to Streamlit Cloud:** Migrated from Google Colab for 24/7 stability.
+- **Enhanced UpdateImage Logic:** Added strict `Done`/`Holding`/`Error` status based on Title & Slug verification.
+- **UI Improvements:** Added 'Refresh Data' buttons and increased Media Fetch Limit to 200,000 items.
+- **Smart Note Sync:** Automatically updates 'API Note' column to 'RENAMED' when slug changes are detected.
+- **Fixed Column Mapping:** Improved sheet column detection (case-insensitive, space-friendly).
+
+### 2026-01-21 - V12.5 Quick Wins
+- Implemented bcrypt password hashing.
+- Added structured logging system.
+
+---
+
 ## Support / Hỗ trợ
 - **Logs:** Check `logs/app.log`
 - **Maintainer:** Admin Team

@@ -248,14 +248,6 @@ def sync_media_to_sheet(sheet_id: str, tab_name: str, media_data: List[Dict]) ->
                              'old_title': current_wp_title,
                              'old_slug': slug
                          })
-                             
-                         wp_updates.append({
-                             'id': media_id, 
-                             'title': new_name_val,
-                             'slug': target_slug,  # New Slug for WP
-                             'old_title': current_wp_title,
-                             'old_slug': slug
-                         })
                      elif new_name_val and len(trace_logs) < 5:
                          trace_logs.append(f"Row {media_id}: Equal, No WP Update. '{new_name_val}' == '{current_wp_title}'")
 
