@@ -124,7 +124,7 @@ def render_dashboard():
         with c_img1:
             sheet_tab_name = st.text_input("Sheet Tab Name:", value="UpdateImage", key="img_sync_tab")
         with c_img2:
-            limit_media = st.number_input("Max Media to Fetch:", min_value=10, max_value=50000, value=5000, step=500)
+            limit_media = st.selectbox("Max Media to Fetch:", [5000, 10000, 25000, 50000, 100000, 200000], index=0)
             
         st.info("Logic: Match by 'ID' or 'Old Slug'. If mismatch -> Error. If 'Slug' matches 'New Slug' -> Done.")
         

@@ -115,8 +115,8 @@ def fetch_media_preview_custom(domain, secret, limit=50, search_term=None):
     params = {"limit": limit}
     if search_term: params["search"] = search_term
     try:
-        # Timeout 5 mins for large datasets (e.g. 10k images)
-        return requests.get(url, headers=headers, params=params, timeout=300).json()
+        # Timeout 10 mins for large datasets (e.g. 50k+ images)
+        return requests.get(url, headers=headers, params=params, timeout=600).json()
     except requests.exceptions.RequestException as e:
         logger.error(f"fetch_media_preview_custom failed: {e}")
         return []
