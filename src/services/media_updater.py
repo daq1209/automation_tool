@@ -4,6 +4,8 @@ from src.repositories import woo, db
 from src.utils.common import col_idx_to_letter
 from src.utils.logger import logger
 
+# Last Updated: Force Cache Flush
+
 def extract_attachment_id(permalink: str) -> Optional[str]:
     """
     Extract attachment_id from WordPress permalink
