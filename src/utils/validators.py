@@ -5,8 +5,9 @@ Provides Pydantic models and validation functions for data integrity.
 """
 
 from typing import List, Optional
-from pydantic import BaseModel, Field, validator, ValidationError
+from pydantic import BaseModel, Field, validator, ValidationError, EmailStr
 from config import Config
+import re
 
 
 class ProductImport(BaseModel):
@@ -48,6 +49,91 @@ class ProductImport(BaseModel):
                 valid_images.append(url)
         
         return valid_images if valid_images else None
+
+
+class UserRegistration(BaseModel):
+    """Validation model for user registration."""
+    
+    username: str = Field(..., min_length=3, max_length=50)
+    email: EmailStr
+    password: str = Field(..., min_length=Config.PASSWORD_MIN_LENGTH)
+    password_confirm: str
+    
+    @validator('username')
+    def username_must_be_valid(cls, v: str) -> str:
+        """Validate username format."""
+        if not v or not v.strip():
+            raise ValueError('Username cannot be empty')
+        
+        # Only allow alphanumeric and underscore
+        if not re.match(r'^[a-zA-Z0-9_]+$', v):
+            raise ValueError('Username can only contain letters, numbers, and underscores')
+        
+        return v.strip().lower()
+    
+    @validator('password')
+    def password_must_be_strong(cls, v: str) -> str:
+        """Validate password strength."""
+        if len(v) < Config.PASSWORD_MIN_LENGTH:
+            raise ValueError(f'Password must be at least {Config.PASSWORD_MIN_LENGTH} characters')
+        
+        if Config.PASSWORD_REQUIRE_UPPERCASE and not any(c.isupper() for c in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        
+        if Config.PASSWORD_REQUIRE_NUMBER and not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one number')
+        
+        if Config.PASSWORD_REQUIRE_SPECIAL:
+            if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
+                raise ValueError('Password must contain at least one special character')
+        
+        return v
+    
+    @validator('password_confirm')
+    def passwords_must_match(cls, v: str, values: dict) -> str:
+        """Validate passwords match."""
+        if 'password' in values and v != values['password']:
+            raise ValueError('Passwords do not match')
+        return v
+
+
+class PasswordReset(BaseModel):
+    """Validation model for password reset request."""
+    
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    """Validation model for password reset confirmation."""
+    
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=Config.PASSWORD_MIN_LENGTH)
+    new_password_confirm: str
+    
+    @validator('new_password')
+    def password_must_be_strong(cls, v: str) -> str:
+        """Validate password strength."""
+        if len(v) < Config.PASSWORD_MIN_LENGTH:
+            raise ValueError(f'Password must be at least {Config.PASSWORD_MIN_LENGTH} characters')
+        
+        if Config.PASSWORD_REQUIRE_UPPERCASE and not any(c.isupper() for c in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        
+        if Config.PASSWORD_REQUIRE_NUMBER and not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one number')
+        
+        if Config.PASSWORD_REQUIRE_SPECIAL:
+            if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
+                raise ValueError('Password must contain at least one special character')
+        
+        return v
+    
+    @validator('new_password_confirm')
+    def passwords_must_match(cls, v: str, values: dict) -> str:
+        """Validate passwords match."""
+        if 'new_password' in values and v != values['new_password']:
+            raise ValueError('Passwords do not match')
+        return v
 
 
 def validate_sheet_structure(headers: List[str]) -> tuple[bool, Optional[str]]:

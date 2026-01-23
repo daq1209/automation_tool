@@ -8,3 +8,5 @@ gspread
 pandas
 requests
 google-auth
+python-dotenv==1.0.0
+email-validator==2.1.0

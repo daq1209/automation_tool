@@ -2,7 +2,7 @@
 # Bỏ qua toàn bộ thư mục chứa secrets.toml
 .streamlit/
 
-# Bỏ qua file service account gốc (đề phòng bạn quên xóa)
+# Bỏ qua file service account gốc 
 service_account.json
 *.json
 

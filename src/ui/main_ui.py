@@ -3,6 +3,7 @@ import pandas as pd
 from src.repositories import db, woo
 from src.services import importer, deleter, checker, media_updater
 from src.utils.common import render_lock_screen, remove_lock_screen
+from src.utils.email_service import email_service
 
 def local_css():
     st.markdown("""
@@ -75,7 +76,7 @@ def render_dashboard():
     st.write("") 
 
     # 3. RENDER MAIN TABS
-    tab1, tab2, tab3 = st.tabs(["Import Pipeline (V12)", "Delete Tool", "Images"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Import Pipeline (V12)", "Delete Tool", "Images", "👥 User Management"])
 
     # === TAB 1: IMPORT ===
     with tab1:
@@ -200,6 +201,114 @@ def render_dashboard():
                 st.error(f"Critical Error: {e}")
             finally:
                 with lock: remove_lock_screen()
+
+    # === TAB 4: USER MANAGEMENT ===
+    with tab4:
+        st.markdown("#### 👥 User Management")
+        
+        # Get current admin info
+        current_username = st.session_state.get('username')
+        current_admin = db.get_admin_info(current_username)
+        
+        if not current_admin:
+            st.error("Error loading admin profile. Please login again.")
+        else:
+            # PENDING APPROVALS
+            st.subheader("⏳ Pending Approvals")
+            
+            pending_users = db.get_pending_users()
+            
+            if not pending_users:
+                st.info("No pending approvals.")
+            else:
+                for user in pending_users:
+                    with st.expander(f"👤 {user['username']} ({user['email']})", expanded=True):
+                        c1, c2, c3 = st.columns([2, 1, 1])
+                        with c1:
+                            st.write(f"**Registered:** {user['created_at']}")
+                            st.write(f"**Email:** {user['email']}")
+                        with c2:
+                            if st.button("✅ Approve", key=f"app_{user['id']}", use_container_width=True):
+                                success, msg, user_info = db.approve_user(user['id'], current_admin['id'])
+                                if success:
+                                    st.success(f"Approved {user['username']}")
+                                    email_service.send_approval_notification(user['email'], user['username'])
+                                    st.rerun()
+                                else:
+                                    st.error(msg)
+                        with c3:
+                            if st.button("❌ Reject", key=f"rej_{user['id']}", type="primary", use_container_width=True):
+                                success, msg = db.reject_user(user['id'])
+                                if success:
+                                    st.warning(f"Rejected {user['username']}")
+                                    st.rerun()
+                                else:
+                                    st.error(msg)
+            
+            st.divider()
+            
+            # ADMIN LIST (READ ONLY)
+            st.subheader("🛡️ Active Admins")
+            admins = db.get_all_admins()
+            if admins:
+                st.write(f"Total Active Admins: {len(admins)}")
+                with st.expander("View Admin Emails"):
+                    for email in admins:
+                        st.text(f"• {email}")
+
+    # === TAB 4: USER MANAGEMENT ===
+    with tab4:
+        st.markdown("#### 👥 User Management")
+        
+        # Get current admin info
+        current_username = st.session_state.get('username')
+        current_admin = db.get_admin_info(current_username)
+        
+        if not current_admin:
+            st.error("Error loading admin profile. Please login again.")
+        else:
+            # PENDING APPROVALS
+            st.subheader("⏳ Pending Approvals")
+            
+            pending_users = db.get_pending_users()
+            
+            if not pending_users:
+                st.info("No pending approvals.")
+            else:
+                for user in pending_users:
+                    with st.expander(f"👤 {user['username']} ({user['email']})", expanded=True):
+                        c1, c2, c3 = st.columns([2, 1, 1])
+                        with c1:
+                            st.write(f"**Registered:** {user['created_at']}")
+                            st.write(f"**Email:** {user['email']}")
+                        with c2:
+                            if st.button("✅ Approve", key=f"app_{user['id']}", use_container_width=True):
+                                success, msg, user_info = db.approve_user(user['id'], current_admin['id'])
+                                if success:
+                                    st.success(f"Approved {user['username']}")
+                                    email_service.send_approval_notification(user['email'], user['username'])
+                                    st.rerun()
+                                else:
+                                    st.error(msg)
+                        with c3:
+                            if st.button("❌ Reject", key=f"rej_{user['id']}", type="primary", use_container_width=True):
+                                success, msg = db.reject_user(user['id'])
+                                if success:
+                                    st.warning(f"Rejected {user['username']}")
+                                    st.rerun()
+                                else:
+                                    st.error(msg)
+            
+            st.divider()
+            
+            # ADMIN LIST (READ ONLY)
+            st.subheader("🛡️ Active Admins")
+            admins = db.get_all_admins()
+            if admins:
+                st.write(f"Total Active Admins: {len(admins)}")
+                with st.expander("View Admin Emails"):
+                    for email in admins:
+                        st.text(f"• {email}")
 
     # 4. RUN AUTO SYNC (CHAY NGAM)
     if selected_option != st.session_state['previous_site']:

@@ -31,6 +31,30 @@ class Config:
     LOG_BACKUP_COUNT: int = 5
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     
+    # Email Settings (SMTP Gmail)
+    EMAIL_PROVIDER: str = "smtp"
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USE_TLS: bool = True
+    
+    # Password Security
+    PASSWORD_MIN_LENGTH: int = 8
+    PASSWORD_REQUIRE_UPPERCASE: bool = True
+    PASSWORD_REQUIRE_NUMBER: bool = True
+    PASSWORD_REQUIRE_SPECIAL: bool = False
+    
+    # Account Security
+    MAX_LOGIN_ATTEMPTS: int = 5
+    ACCOUNT_LOCKOUT_DURATION: int = 900  # 15 minutes in seconds
+    
+    # Token Expiry
+    VERIFICATION_TOKEN_EXPIRY: int = 86400  # 24 hours in seconds
+    RESET_TOKEN_EXPIRY: int = 3600  # 1 hour in seconds
+    
+    # Rate Limiting
+    MAX_REGISTRATION_PER_HOUR: int = 5
+    MAX_PASSWORD_RESET_PER_HOUR: int = 3
+    
     # Sheet Column Names (for validation)
     REQUIRED_COLUMNS: list = [
         'Check_update',

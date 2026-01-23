@@ -289,7 +289,7 @@ test/
 
 ## 🔮 Tính Năng Dự Kiến (tasks.txt)
 
-- [ ] Port app lên Google Colab (để chạy 24/7 miễn phí)
+
 - [x] Chuyển đổi hardcode key thành dynamic key
 - [x] Tích hợp hiển thị trực tiếp dữ liệu Sheet
 - [x] Tối ưu tốc độ tải dữ liệu
