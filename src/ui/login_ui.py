@@ -236,10 +236,10 @@ def render_forgot_password_form():
                 else:
                     # Always show same message (prevent email enumeration)
                     st.success(
-                        "✅ Password reset link sent!\n\n"
-                        f"📧 If an account exists with **{validated.email}**, "
+                        "Password reset link sent!\n\n"
+                        f"If an account exists with **{validated.email}**, "
                         "you will receive a password reset link.\n\n"
-                        "⏰ The link will expire in 1 hour."
+                        "The link will expire in 1 hour."
                     )
                     
             except ValidationError as e:

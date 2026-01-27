@@ -189,7 +189,7 @@ class EmailService:
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🔑 Password Reset</h1>
+                    <h1>Password Reset</h1>
                 </div>
                 <div class="content">
                     <h2>Hi {username},</h2>

@@ -4,6 +4,9 @@ from src.repositories import db, woo
 from src.services import importer, deleter, checker, media_updater
 from src.utils.common import render_lock_screen, remove_lock_screen
 from src.utils.email_service import email_service
+from src.utils.locales import get_text
+from src.ui import updater_ui
+
 
 def local_css():
     st.markdown("""
@@ -29,30 +32,51 @@ def local_css():
 def render_dashboard():
     local_css()
 
-from src.ui import updater_ui
-
-def render_dashboard():
-    local_css()
-
+    # --- LANGUAGE STATE ---
+    if 'lang' not in st.session_state:
+        st.session_state['lang'] = 'vi' # Default to Vietnamese
+    
+    lang = st.session_state['lang']
+    
     with st.sidebar:
-        st.title("Admin Console")
+        st.title(get_text("nav_title", lang))
         st.write("---")
         
+        # LANGUAGE SELECTOR
+        lang_code = st.radio("Language / Ngôn ngữ", ["Tiếng Việt", "English"], index=0 if lang == 'vi' else 1)
+        st.session_state['lang'] = 'vi' if lang_code == "Tiếng Việt" else 'en'
+        lang = st.session_state['lang'] # Update local var
+        
+        st.write("---")
+
         # SIDEBAR NAVIGATION
-        nav_mode = st.radio("Menu", ["Dashboard", "Data Updater", "User Management"], index=0)
+        nav_options = [
+            get_text("nav_dashboard", lang),
+            get_text("nav_updater", lang),
+            get_text("nav_user_mgmt", lang)
+        ]
+        # Map back to internal keys for logic
+        nav_map = {
+            get_text("nav_dashboard", lang): "Dashboard",
+            get_text("nav_updater", lang): "Data Updater",
+            get_text("nav_user_mgmt", lang): "User Management"
+        }
+        
+        nav_selection = st.radio(get_text("nav_menu_label", lang), nav_options, index=0)
+        nav_mode = nav_map[nav_selection]
 
         # Logout Logic (moved down)
         st.write("---")
         st.caption("Environment: Production")
-        if st.button("Logout", type="secondary"):
+        if st.button(get_text("logout_btn", lang), type="secondary"):
             st.session_state['is_logged_in'] = False
             st.rerun()
         
         st.write("---")
         
         # GLOBAL SETTINGS (MOVED TO SIDEBAR)
-        with st.expander("⚙️ Advanced Settings", expanded=False):
-            auto_threads = st.slider("Worker Threads:", 1, 30, 20)
+        with st.expander(get_text("settings_label", lang), expanded=False):
+            auto_threads = st.slider(get_text("threads_label", lang), 1, 30, 20)
 
     st.title("POD Automation Environment")
     
@@ -63,7 +87,7 @@ def render_dashboard():
 
     # 1. SELECT SITE
     st.write("")
-    st.markdown("### 1. Target Website")
+    st.markdown(f"### {get_text('site_select_header', lang)}")
     
     sites = db.get_all_sites()
     if not sites:
@@ -71,16 +95,17 @@ def render_dashboard():
         return
 
     site_map = {s['site_name']: s for s in sites}
-    site_options = ["-- Select a Website --"] + list(site_map.keys())
+    site_options = [get_text("site_select_default", lang)] + list(site_map.keys())
     
     if 'previous_site' not in st.session_state: 
         st.session_state['previous_site'] = site_options[0]
 
-    selected_option = st.selectbox("Select Website to Start:", site_options, label_visibility="collapsed")
+    selected_option = st.selectbox(get_text("site_select_label", lang), site_options, label_visibility="collapsed")
 
     if selected_option == site_options[0]:
-        st.info("Please select a website to proceed.")
+        st.info(get_text("site_select_prompt", lang))
         return
+
 
     selected_site = site_map[selected_option]
 
@@ -94,29 +119,41 @@ def render_dashboard():
         updater_ui.render_updater_ui(selected_site)
         return
 
+    # FETCH TABS ONCE
+    sheet_tabs = db.get_worksheet_titles(selected_site['google_sheet_id'])
+    if not sheet_tabs:
+        sheet_tabs = ["Sheet1"] # Fallback
+
     # 3. RENDER MAIN TABS
-    tab1, tab2, tab3 = st.tabs(["Import Pipeline (V12)", "Delete Tool", "Images"])
+    tab1, tab2, tab3 = st.tabs([
+        get_text("tab_import", lang), 
+        get_text("tab_delete", lang), 
+        get_text("tab_images", lang)
+    ])
 
     # === TAB 1: IMPORT ===
     with tab1:
+        with st.expander(get_text("guide_import_title", lang)):
+            st.markdown(get_text("guide_import_content", lang))
         with st.container(border=True):
-            st.markdown("#### ⚙️ Configuration")
+            st.markdown(f"#### {get_text('config_header', lang)}")
             c_conf1, c_conf2 = st.columns(2)
             with c_conf1:
-                default_tab_data = st.text_input("Data Tab Name:", value="Action", key="cfg_tab_data", help="Sheet Tab for Product Data")
+                default_tab_data = st.selectbox(get_text("tab_data_label", lang), sheet_tabs, index=0 if "Action" not in sheet_tabs else sheet_tabs.index("Action"), key="cfg_tab_data")
             with c_conf2:
-                default_tab_img = st.text_input("Image Tab Name:", value="Action", key="cfg_tab_img", help="Sheet Tab for Image Updates")
+                default_tab_img = st.selectbox(get_text("tab_img_label", lang), sheet_tabs, index=0 if "Action" not in sheet_tabs else sheet_tabs.index("Action"), key="cfg_tab_img")
+
 
         with st.container(border=True):
-            st.markdown("#### Import Scope")
+            st.markdown(f"#### {get_text('import_scope_header', lang)}")
             c_mode, c_info = st.columns([2, 3])
             with c_mode: 
-                import_mode = st.radio("Mode:", ["Import All Rows", "Filter by Specific IDs"], horizontal=True)
+                import_mode = st.radio(get_text("mode_label", lang), [get_text("mode_all", lang), get_text("mode_filter", lang)], horizontal=True)
             
             filter_ids = []
-            if import_mode == "Filter by Specific IDs":
-                st.info("Enter IDs to match (Start With):")
-                txt_filter = st.text_area("Sheet IDs:", height=100, key="import_filter")
+            if import_mode == get_text("mode_filter", lang):
+                st.info(f"{get_text('filter_input_label', lang)} (Start With)")
+                txt_filter = st.text_area("IDs:", height=100, key="import_filter")
                 if txt_filter: 
                     filter_ids = [x.strip() for x in txt_filter.replace(',', '\n').split('\n') if x.strip()]
             
@@ -125,20 +162,20 @@ def render_dashboard():
                 else: st.info("Target: All rows in Sheet.")
 
         st.write("")
-        st.info("Note: Successful imports -> 'Done' | Published -> '1'")
+        st.info(get_text("import_note", lang))
         
         c_preview, c_refresh = st.columns([2, 1])
         with c_preview:
-            show_preview = st.checkbox("Preview Data (Applied Filter)", value=False)
+            show_preview = st.checkbox(get_text("preview_chk", lang), value=False)
         with c_refresh:
-            if show_preview and st.button("Refresh Data", key="refresh_import"):
+            if show_preview and st.button(get_text("refresh_btn", lang), key="refresh_import"):
                 st.rerun()
 
         if show_preview:
             render_data_preview(selected_site, default_tab_data, filter_ids)
         
         st.write("")
-        if st.button("RUN IMPORT PROCESS", type="primary"):
+        if st.button(get_text("run_import_btn", lang), type="primary"):
             # [LOCK UI] Khoa man hinh
             lock = st.empty()
             with lock: render_lock_screen()
@@ -149,32 +186,35 @@ def render_dashboard():
 
     # === TAB 2: DELETE TOOL ===
     with tab2:
-        render_delete_tool(sites, list(site_map.keys()), selected_option, default_tab_data, auto_threads)
+        render_delete_tool(sites, list(site_map.keys()), selected_option, default_tab_data, auto_threads, lang)
+
 
     # === TAB 3: IMAGES ===
     with tab3:
-        st.markdown("#### Sync WordPress Media to Sheet")
+        with st.expander(get_text("guide_img_title", lang)):
+            st.markdown(get_text("guide_img_content", lang))
+        st.markdown(f"#### {get_text('sync_header', lang)}")
         
         c_img1, c_img2 = st.columns(2)
         with c_img1:
-            sheet_tab_name = st.text_input("Sheet Tab Name:", value="UpdateImage", key="img_sync_tab")
+            sheet_tab_name = st.selectbox(get_text("tab_img_label", lang), sheet_tabs, index=0 if "UpdateImage" not in sheet_tabs else sheet_tabs.index("UpdateImage"), key="img_sync_tab")
         with c_img2:
-            limit_media = st.selectbox("Max Media to Fetch:", [5000, 10000, 25000, 50000, 100000, 200000], index=0)
+            limit_media = st.selectbox(get_text("limit_label", lang), [5000, 10000, 25000, 50000, 100000, 200000], index=0)
             
         st.info("Logic: Match by 'ID' or 'Old Slug'. If mismatch -> Error. If 'Slug' matches 'New Slug' -> Done.")
         
         c_img_prev, c_img_ref = st.columns([2, 1])
         with c_img_prev:
-            show_img_preview = st.checkbox("Preview Sheet Data", key="img_preview_chk")
+            show_img_preview = st.checkbox(get_text("preview_sheet_chk", lang), key="img_preview_chk")
         with c_img_ref:
-            if show_img_preview and st.button("Refresh Data", key="refresh_images"):
+            if show_img_preview and st.button(get_text("refresh_btn", lang), key="refresh_images"):
                 st.rerun()
 
         if show_img_preview:
             render_data_preview(selected_site, sheet_tab_name)
         
         st.write("")
-        if st.button("RUN MEDIA SYNC", type="primary"):
+        if st.button(get_text("run_sync_btn", lang), type="primary"):
             lock = st.empty()
             with lock: render_lock_screen()
             try:
@@ -327,7 +367,7 @@ def run_import_v12(site, tab_name, threads, filter_ids=None):
             st.success(f"Processed {len(rows)} items.")
         except Exception as e: st.error(str(e))
 
-def render_delete_tool(sites, site_names, selected_name, default_tab_data, auto_threads):
+def render_delete_tool(sites, site_names, selected_name, default_tab_data, auto_threads, lang):
     del_site = next((s for s in sites if s['site_name'] == selected_name), None)
     if not del_site: return
     
@@ -335,15 +375,17 @@ def render_delete_tool(sites, site_names, selected_name, default_tab_data, auto_
     cs = del_site.get('consumer_secret') or ""
     secret = del_site.get('secret_key') or ""
     
-    t_prod, t_media = st.tabs(["Delete Products", "Delete Media"])
+    t_prod, t_media = st.tabs([get_text("tab_del_prod", lang), get_text("tab_del_media", lang)])
     with t_prod:
-        mode = st.radio("Mode:", ["Visual Selection", "Wipe All"], horizontal=True)
+        with st.expander(get_text("guide_delete_title", lang)):
+             st.markdown(get_text("guide_delete_content", lang))
+        mode = st.radio(get_text("mode_label", lang), [get_text("mode_visual", lang), get_text("mode_wipe", lang)], horizontal=True)
         st.divider()
-        if mode == "Visual Selection":
+        if mode == get_text("mode_visual", lang):
             c1, c2 = st.columns([3, 1])
-            with c1: search = st.text_input("Search ID/SKU:")
-            with c2: limit = st.number_input("Limit:", 10, 200, 50)
-            if st.button("Fetch"):
+            with c1: search = st.text_input(get_text("search_label", lang))
+            with c2: limit = st.number_input(get_text("limit_label", lang), 10, 200, 50)
+            if st.button(get_text("fetch_btn", lang)):
                 s_inp = search if search else None
                 data = deleter.get_products_for_ui(del_site['domain_url'], secret, limit, s_inp)
                 st.session_state['prod_preview'] = pd.DataFrame(data) if data else pd.DataFrame()
@@ -351,7 +393,7 @@ def render_delete_tool(sites, site_names, selected_name, default_tab_data, auto_
             if 'prod_preview' in st.session_state and not st.session_state['prod_preview'].empty:
                 edited = st.data_editor(st.session_state['prod_preview'], key="pe", use_container_width=True)
                 sel = edited[edited["Select"]==True]
-                if st.button(f"Delete {len(sel)} items"):
+                if st.button(get_text("delete_sel_btn", lang).format(len(sel))):
                     # [LOCK UI]
                     lock = st.empty()
                     with lock: render_lock_screen()
@@ -366,8 +408,8 @@ def render_delete_tool(sites, site_names, selected_name, default_tab_data, auto_
                     finally:
                         with lock: remove_lock_screen()
         else:
-             st.warning("DANGER: This will delete ALL products on the website.")
-             if st.button("CONFIRM WIPE ALL PRODUCTS", type="primary"):
+             st.warning(get_text("danger_warn", lang))
+             if st.button(get_text("confirm_wipe_btn", lang), type="primary"):
                  # [LOCK UI]
                  lock = st.empty()
                  with lock: render_lock_screen()

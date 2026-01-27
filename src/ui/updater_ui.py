@@ -3,17 +3,27 @@ import pandas as pd
 from src.repositories import db
 from src.services import updater
 from src.utils.common import render_lock_screen, remove_lock_screen
+from src.utils.locales import get_text
 
 def render_updater_ui(selected_site):
-    st.markdown("## CSV Data Updater")
+    lang = st.session_state.get('lang', 'en')
+    st.markdown(f"## {get_text('updater_title', lang)}")
     st.info(f"Target: **{selected_site['site_name']}** | Sheet ID: `{selected_site['google_sheet_id']}`")
+    
+    with st.expander(get_text("guide_updater_title", lang)):
+        st.markdown(get_text("guide_updater_content", lang))
     
     # 1. Configuration Check
     col1, col2 = st.columns([1, 2])
     with col1:
-        tab_name = st.text_input("Target Sheet Tab Name:", value="Action")
+        # Fetch Tabs
+        sheet_tabs = db.get_worksheet_titles(selected_site['google_sheet_id'])
+        if not sheet_tabs: sheet_tabs = ["Action"]
+        
+        tab_name = st.selectbox(get_text("target_tab_label", lang), sheet_tabs, index=0 if "Action" not in sheet_tabs else sheet_tabs.index("Action"))
+
     with col2:
-        uploaded_file = st.file_uploader("Upload CSV Update File", type=['csv'])
+        uploaded_file = st.file_uploader(get_text("upload_label", lang), type=['csv'])
 
     if not uploaded_file:
         st.info("Please upload a CSV file to start.")
@@ -27,36 +37,36 @@ def render_updater_ui(selected_site):
             st.session_state['df_cache'] = df_raw
             st.session_state['last_uploaded'] = uploaded_file.name
         
-        st.subheader("1. Review & Select Data")
+        st.subheader(get_text("review_header", lang))
         
         # 1A. Column Selection (Simulating "Checkboxes above columns")
         csv_headers_raw = list(st.session_state['df_cache'].columns)
         # Remove 'Select' if it exists in raw (it shouldn't yet in raw, but just safety)
         csv_headers_pure = [h for h in csv_headers_raw if h != 'Select']
         
-        st.caption("Step 1: Choose Columns to Update")
+        st.caption(get_text("step1_caption", lang))
         cols_to_update = st.multiselect(
-            "Select Columns to Update:", 
+            get_text("col_select_label", lang), 
             options=csv_headers_pure,
             default=[],
             placeholder="Choose columns..."
         )
         
-        st.caption("Step 2: Check Rows to Process (See Highlighted Preview below)")
+        st.caption(get_text("step2_caption", lang))
         
         # Row Selection Controls
         c_btn1, c_btn2, c_space = st.columns([1, 1, 4])
         with c_btn1:
-            if st.button("✅ Select All Rows", use_container_width=True):
+            if st.button(get_text("btn_select_all", lang), use_container_width=True):
                 st.session_state['df_cache']['Select'] = True
                 st.rerun()
         with c_btn2:
-            if st.button("❌ Deselect All", use_container_width=True):
+            if st.button(get_text("btn_deselect_all", lang), use_container_width=True):
                 st.session_state['df_cache']['Select'] = False
                 st.rerun()
 
         # 1B. Row Selection (Data Editor)
-        st.markdown("##### 📋 Data from CSV File")
+        st.markdown(f"##### {get_text('data_header', lang)}")
         df_editor = st.data_editor(
             st.session_state['df_cache'],
             hide_index=True,
@@ -69,8 +79,8 @@ def render_updater_ui(selected_site):
         
         # 1C. Visual Highlighting (The "Spot Difference" Request)
         if cols_to_update and not df_selected.empty:
-            st.markdown("##### 🔍 Highlighted Preview (Values to be Updated)")
-            st.caption("Values to be updated are highlighted below:")
+            st.markdown(f"##### {get_text('highlight_header', lang)}")
+            st.caption(get_text("highlight_caption", lang))
             
             # Create a view for styling
             # We want to show the rows that are selected, and highlight the columns that are selected
@@ -95,7 +105,7 @@ def render_updater_ui(selected_site):
             
         csv_headers = [c for c in df_editor.columns if c != "Select"]
         
-        st.write(f"Processing: **{len(df_selected)} rows** across **{len(cols_to_update)} columns**.")
+        st.write(get_text("processing_stats", lang).format(len(df_selected), len(cols_to_update)))
         if len(df_selected) == 0:
             st.info(" Please select at least one row above.")
 

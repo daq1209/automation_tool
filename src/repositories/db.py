@@ -68,6 +68,18 @@ def get_all_sites():
         logger.error(f"Database error in get_all_sites: {e}", exc_info=True)
         return []
 
+def get_worksheet_titles(sheet_id):
+    """Fetch all worksheet titles from a Google Sheet."""
+    client = init_google_sheets()
+    if not client: return []
+    try:
+        sh = client.open_by_key(sheet_id)
+        return [ws.title for ws in sh.worksheets()]
+    except Exception as e:
+        logger.error(f"Error fetching worksheets for {sheet_id}: {e}")
+        st.error(f"Could not load Sheet Tabs: {e}")
+        return []
+
 def check_admin_login(username: str, password: str) -> bool:
     """
     Enhanced login with account status checks and auto-migration.
