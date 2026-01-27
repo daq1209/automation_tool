@@ -1,6 +1,6 @@
-# POD Automation System - Tổng Quan Hệ Thống
+# POD Automation Environment - Tổng Quan Hệ Thống
 
-> **Phiên bản:** V12.5 Enterprise  
+> **Environment:** POD Automation Environment  
 > **Công nghệ:** Python (Streamlit) + WordPress (Custom API)  
 > **Mục đích:** Tự động hóa quản lý và đồng bộ dữ liệu sản phẩm giữa Google Sheets và WooCommerce
 
@@ -26,18 +26,25 @@ Hệ thống này là một **ETL Automation Tool** với khả năng **Two-Way 
 app.py
 ├── Login UI (login_ui.py)
 └── Main Dashboard (main_ui.py)
-    ├── Import Pipeline
-    ├── Delete Tool
-    └── Auto Sync
+    ├── Sidebar Menu:
+    │   ├── Dashboard (Import/Delete/Images)
+    │   ├── Data Updater (CSV Processing)
+    │   └── User Management (Admin Only)
+    └── Global Settings (Sidebar)
 ```
 
 #### Các Module Chính
 
 **`src/ui/`** - Giao diện người dùng
 - `login_ui.py`: Xác thực admin qua Supabase
-- `main_ui.py`: Dashboard chính với 2 tab:
-  - **Import Pipeline**: Upload sản phẩm với filter và preview
-  - **Delete Tool**: Xóa sản phẩm/media (visual selection hoặc wipe all)
+- `main_ui.py`: Dashboard điều hướng chính:
+  - **Sidebar**: Chứa Menu điều hướng và Advanced Settings (Worker Threads).
+  - **Dashboard Tab**:
+    - **Import Pipeline**: Cấu hình Tab Name, Upload sản phẩm.
+    - **Delete Tool**: Xóa sản phẩm/media.
+    - **Images**: Đồng bộ Media.
+  - **Data Updater**: Công cụ update dữ liệu từ CSV (Highlight diffs, Select All).
+  - **User Management**: Quản lý thành viên (Approve/Reject).
 
 **`src/services/`** - Business Logic Layer
 - `importer.py`: Xử lý import 2 pha (Data → Images background)

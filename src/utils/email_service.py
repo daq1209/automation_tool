@@ -1,5 +1,5 @@
 """
-Email service for POD Automation System.
+Email service for POD Automation Environment.
 
 Handles sending verification and password reset emails via SMTP Gmail.
 """
@@ -113,7 +113,7 @@ class EmailService:
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🔐 POD Automation</h1>
+                    <h1>POD Automation</h1>
                 </div>
                 <div class="content">
                     <h2>Hi {username},</h2>
@@ -128,7 +128,7 @@ class EmailService:
                     <p>If you didn't create this account, please ignore this email.</p>
                 </div>
                 <div class="footer">
-                    <p>POD Automation System &copy; 2026</p>
+                    <p>POD Automation Environment &copy; 2026</p>
                 </div>
             </div>
         </body>
@@ -151,7 +151,7 @@ class EmailService:
         If you didn't create this account, please ignore this email.
         
         ---
-        POD Automation System © 2026
+        POD Automation Environment © 2026
         """
         
         return self._send_email(to_email, subject, html_content, text_content)
@@ -260,7 +260,7 @@ class EmailService:
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>✅ Account Approved!</h1>
+                    <h1>Account Approved!</h1>
                 </div>
                 <div class="content">
                     <h2>Hi {username},</h2>
@@ -270,7 +270,7 @@ class EmailService:
                         <a href="{self.app_url}" class="button">Go to Login</a>
                     </p>
                     <p><strong>Your username:</strong> {username}</p>
-                    <p>Welcome aboard! 🎉</p>
+                    <p>Welcome aboard!</p>
                 </div>
                 <div class="footer">
                     <p>POD Automation System &copy; 2026</p>
@@ -291,7 +291,7 @@ class EmailService:
         
         Your username: {username}
         
-        Welcome aboard! 🎉
+        Welcome aboard!
         
         ---
         POD Automation System © 2026
@@ -331,7 +331,7 @@ class EmailService:
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>👤 New User Registration</h1>
+                    <h1>New User Registration</h1>
                 </div>
                 <div class="content">
                     <h2>Admin Action Required</h2>

@@ -3,7 +3,7 @@ from src.utils.common import local_css
 from src.ui import login_ui, main_ui, verify_email, reset_password
 
 # 1. Cấu hình trang
-st.set_page_config(page_title="POD Automation V13", layout="wide", initial_sidebar_state="auto")
+st.set_page_config(page_title="POD Automation Environment", layout="wide", initial_sidebar_state="auto")
 
 # 2. Load CSS
 local_css("style.css")

@@ -1,5 +1,5 @@
 """
-Structured logging module for POD Automation System.
+Structured logging module for POD Automation Environment.
 
 Provides centralized logging with file rotation and consistent formatting.
 """

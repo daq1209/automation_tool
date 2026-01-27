@@ -53,7 +53,7 @@ def check_password_strength(password: str) -> tuple[int, str]:
 
 def render_login_form():
     """Render login form."""
-    st.markdown("### 🔐 Login to Your Account")
+    st.markdown("### Login to Your Account")
     
     with st.form("login_form"):
         username = st.text_input("Username or Email:", placeholder="Enter your username")
@@ -68,24 +68,24 @@ def render_login_form():
         
         if submit:
             if not username or not password:
-                st.error("⚠️ Please fill in both fields")
+                st.error("Please fill in both fields")
             else:
                 # Try login
                 if db.check_admin_login(username, password):
                     st.session_state['is_logged_in'] = True
                     st.session_state['username'] = username
-                    st.success("✅ Login successful!")
+                    st.success("Login successful!")
                     logger.info(f"User logged in: {username}")
                     st.rerun()
                 else:
-                    st.error("❌ Invalid credentials or account inactive")
+                    st.error("Invalid credentials or account inactive")
                     logger.warning(f"Failed login attempt: {username}")
 
 
 def render_registration_form():
     """Render registration form."""
-    st.markdown("### 📝 Create New Account")
-    st.info("ℹ️ You will need to verify your email and wait for admin approval before you can login.")
+    st.markdown("### Create New Account")
+    st.info("You will need to verify your email and wait for admin approval before you can login.")
     
     with st.form("registration_form"):
         username = st.text_input(
@@ -109,7 +109,7 @@ def render_registration_form():
         # Password strength indicator
         if password:
             score, feedback = check_password_strength(password)
-            colors = ['🔴', '🟠', '🟡', '🟢', '🟢']
+            colors = ['[Very Weak]', '[Weak]', '[Medium]', '[Strong]', '[Strong]']
             st.caption(f"{colors[score]} Strength: {feedback}")
         
         password_confirm = st.text_input(
@@ -124,11 +124,11 @@ def render_registration_form():
         
         if submit:
             if not username or not email or not password or not password_confirm:
-                st.error("⚠️ Please fill in all fields")
+                st.error("Please fill in all fields")
                 return
             
             if not terms:
-                st.error("⚠️ You must agree to the Terms of Service")
+                st.error("You must agree to the Terms of Service")
                 return
             
             # Validate with Pydantic
@@ -158,34 +158,34 @@ def render_registration_form():
                     )
                     
                     if email_success:
-                        st.success("✅ Account created successfully!")
+                        st.success("Account created successfully!")
                         st.info(
-                            f"📧 A verification email has been sent to **{validated.email}**\n\n"
+                            f"A verification email has been sent to **{validated.email}**\n\n"
                             "Please check your inbox (and spam folder) and click the verification link.\n\n"
-                            "⏰ The link will expire in 24 hours."
+                            "The link will expire in 24 hours."
                         )
                         logger.info(f"User registered: {validated.username}")
                     else:
                         st.warning(
-                            "⚠️ Account created but email failed to send.\n\n"
+                            "Account created but email failed to send.\n\n"
                             f"Error: {email_msg}\n\n"
                             "Please contact admin to manually verify your account."
                         )
                 else:
-                    st.error(f"❌ Registration failed: {result}")
+                    st.error(f"Registration failed: {result}")
                     
             except ValidationError as e:
                 errors = e.errors()
                 for error in errors:
                     field = error['loc'][0]
                     message = error['msg']
-                    st.error(f"❌ {field}: {message}")
+                    st.error(f"{field}: {message}")
 
 
 def render_forgot_password_form():
     """Render forgot password form."""
-    st.markdown("### 🔑 Reset Your Password")
-    st.info("ℹ️ Enter your email address and we'll send you a link to reset your password.")
+    st.markdown("### Reset Your Password")
+    st.info("Enter your email address and we'll send you a link to reset your password.")
     
     with st.form("forgot_password_form"):
         email = st.text_input(
@@ -197,7 +197,7 @@ def render_forgot_password_form():
         
         if submit:
             if not email:
-                st.error("⚠️ Please enter your email address")
+                st.error("Please enter your email address")
                 return
             
             # Validate email format
@@ -225,14 +225,14 @@ def render_forgot_password_form():
                     
                     if email_success:
                         st.success(
-                            "✅ Password reset link sent!\n\n"
-                            f"📧 If an account exists with **{validated.email}**, "
+                            "Password reset link sent!\n\n"
+                            f"If an account exists with **{validated.email}**, "
                             "you will receive a password reset link.\n\n"
-                            "⏰ The link will expire in 1 hour."
+                            "The link will expire in 1 hour."
                         )
                         logger.info(f"Password reset requested for: {validated.email}")
                     else:
-                        st.error(f"❌ Failed to send email: {email_msg}")
+                        st.error(f"Failed to send email: {email_msg}")
                 else:
                     # Always show same message (prevent email enumeration)
                     st.success(
@@ -243,16 +243,16 @@ def render_forgot_password_form():
                     )
                     
             except ValidationError as e:
-                st.error(f"❌ Invalid email address")
+                st.error(f"Invalid email address")
 
 
 def render_login():
     """Main login page with tabs."""
-    st.title("🔐 POD Automation System")
-    st.caption("Version 13.0 - User Management Enabled")
+    st.title("POD Automation Environment")
+    st.caption("Environment: Production - User Management Enabled")
     
     # Create tabs
-    tab1, tab2, tab3 = st.tabs(["🔐 Login", "📝 Register", "🔑 Forgot Password"])
+    tab1, tab2, tab3 = st.tabs(["Login", "Register", "Forgot Password"])
     
     with tab1:
         st.write("")  # Spacing
@@ -270,4 +270,4 @@ def render_login():
     st.write("")
     st.write("")
     st.markdown("---")
-    st.caption("🔒 Secure authentication powered by bcrypt and email verification")
+    st.caption("Secure authentication powered by bcrypt and email verification")

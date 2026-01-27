@@ -1,8 +1,23 @@
-# POD Automation System - Đánh Giá & Kế Hoạch Cải Thiện
+# POD Automation Environment - Đánh Giá & Kế Hoạch Cải Thiện
 
-> **Ngày đánh giá:** 2026-01-21  
-> **Phiên bản hiện tại:** V12.5 Enterprise  
+> **Ngày đánh giá:** 2026-01-27  
+> **Environment:** POD Automation Environment  
 > **Người đánh giá:** Technical Analysis Report
+
+---
+
+## 🌟 Cải Thiện Mới (V13.0)
+
+### **1. UI/UX Refactoring**
+- **Cleaner Interface**: Loại bỏ hoàn toàn emojis, sử dụng giao diện chuyên nghiệp hơn.
+- **Sidebar Navigation**: Chuyển đổi sang Menu điều hướng bên trái (Dashboard, Data Updater, User Management).
+- **Better Settings**: Di chuyển cấu hình Tab Name vào ngữ cảnh Import, cấu hình Threads vào Sidebar.
+
+### **2. Data Updater Enhancements**
+- **Safety First**: Mặc định không chọn hàng/cột nào khi load CSV.
+- **Visual Diff**: Highlight màu sắc (Đỏ/Xanh) để so sánh giá trị cũ/mới.
+- **Batch Selection**: Thêm nút "Select All" / "Deselect All".
+- **Interactive Mapping**: Chọn cột cần update ngay trên bảng dữ liệu.
 
 ---
 

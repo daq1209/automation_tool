@@ -53,13 +53,13 @@ def check_password_strength(password: str) -> tuple[int, str]:
 
 def render_reset_password():
     """Handle password reset with token from URL."""
-    st.title("🔑 Reset Your Password")
+    st.title("Reset Your Password")
     
     # Get token from URL query params
     token = st.query_params.get("reset")
     
     if not token:
-        st.error("⚠️ No reset token provided")
+        st.error("No reset token provided")
         st.info("Please use the reset link sent to your email.")
         if st.button("← Back to Login"):
             st.query_params.clear()
@@ -78,7 +78,7 @@ def render_reset_password():
         # Password strength indicator
         if new_password:
             score, feedback = check_password_strength(new_password)
-            colors = ['🔴', '🟠', '🟡', '🟢', '🟢']
+            colors = ['[Very Weak]', '[Weak]', '[Medium]', '[Strong]', '[Strong]']
             st.caption(f"{colors[score]} Strength: {feedback}")
         
         new_password_confirm = st.text_input(
@@ -91,7 +91,7 @@ def render_reset_password():
         
         if submit:
             if not new_password or not new_password_confirm:
-                st.error("⚠️ Please fill in both fields")
+                st.error("Please fill in both fields")
                 return
             
             # Validate with Pydantic
@@ -106,7 +106,7 @@ def render_reset_password():
                 success, message = db.reset_password(validated.token, validated.new_password)
                 
                 if success:
-                    st.success("✅ Password Reset Successful!")
+                    st.success("Password Reset Successful!")
                     st.balloons()
                     
                     st.info(
@@ -121,7 +121,7 @@ def render_reset_password():
                         st.query_params.clear()
                         st.rerun()
                 else:
-                    st.error(f"❌ Reset Failed: {message}")
+                    st.error(f"Reset Failed: {message}")
                     st.warning(
                         "**Common Issues:**\n\n"
                         "• Link expired (1 hour limit)\n"
@@ -135,7 +135,7 @@ def render_reset_password():
                 for error in errors:
                     field = error['loc'][0]
                     msg = error['msg']
-                    st.error(f"❌ {field}: {msg}")
+                    st.error(f"{field}: {msg}")
     
     st.write("")
     st.write("")

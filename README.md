@@ -1,7 +1,7 @@
-# POD Automation System
+# POD Automation Environment
 
-> **Version:** V13.0 Enterprise (Cloud Deployment & Enhanced Sync Logic)
-> **Last Updated:** 2026-01-22
+> **Environment:** POD Automation Environment
+> **Last Updated:** 2026-01-27
 
 An internal automation system for synchronizing product data between Google Sheets and WordPress/WooCommerce via custom APIs. Now successfully deployed on **Streamlit Cloud**.
 

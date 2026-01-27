@@ -12,13 +12,13 @@ from src.utils.logger import logger
 
 def render_verify_email():
     """Handle email verification with token from URL."""
-    st.title("📧 Email Verification")
+    st.title("Email Verification")
     
     # Get token from URL query params
     token = st.query_params.get("verify")
     
     if not token:
-        st.error("⚠️ No verification token provided")
+        st.error("No verification token provided")
         st.info("Please use the verification link sent to your email.")
         if st.button("← Back to Login"):
             st.query_params.clear()
@@ -29,7 +29,7 @@ def render_verify_email():
     success, message = db.verify_email(token)
     
     if success:
-        st.success(f"✅ {message}")
+        st.success(f"{message}")
         st.balloons()
         
         st.info(
@@ -68,7 +68,7 @@ def render_verify_email():
             st.rerun()
             
     else:
-        st.error(f"❌ Verification Failed")
+        st.error(f"Verification Failed")
         st.warning(message)
         
         st.info(
